@@ -2,11 +2,11 @@ import argparse
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--verbosity", help="increase output verbosity")
-    args = parser.parse_args()
-    
-    if args.verbosity:
-        print("verbosity turned on")
+	parser = argparse.ArgumentParser()
+	parser.add_argument('--verbosity', help='increase output verbosity')
+	args = parser.parse_args()
 
-    print('hi')
+	if args.verbosity:
+		print('verbosity turned on')
+
+	print('hi')

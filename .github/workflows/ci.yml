@@ -10,17 +10,23 @@ jobs:
       fail-fast: false
       matrix:
         os:
-        - 'ubuntu-24.04'  
-        - 'ubuntu-24.04-arm'
+        - 'ubuntu-latest'  
+        # - 'windows-latest'
+        # - 'mac-latest'
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
 
-      - name: build
-        run: docker compose build app --no-cache
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+
+      - name: install deps
+        run: pip install -r requirements.txt -r requirements-dev.txt
 
       - name: lint
-        run: docker compose run --rm app ruff format --check
+        run: ruff format --check
 
       - name: test
-        run: docker compose run --rm app pytest
+        run: pytest
