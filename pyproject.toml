@@ -1,0 +1,25 @@
+[backend]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cycl"
+description = "cycl is a CLI and Python SDK to help identify cross-stack import/export circular dependencies, for a given AWS account and region."
+version = "0.0.1"
+readme = "README.md"
+keywords = ["aws", "cdk", "cycle", "circular", "dependency", "infrastructure"]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+]
+
+[project.urls]
+Repository = "http://github.com/tcm5343/cycl"
+
+[tool.ruff]
+line-length = 125
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "tab"
+docstring-code-format = true
