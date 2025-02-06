@@ -6,6 +6,10 @@
 
 cycl is a CLI and Python SDK to help identify cross-stack import/export circular dependencies, for a given AWS account and region.
 
+### Why use cycl?
+
+Over the lifetime of a project, circular references are bound to be introduced. They may not be noticed until you need to re-deploy some infrastructure. A good example is disaster recovery testing and potentially deploying all your infrastructure from scratch in a new region. This tool allows you to scan 
+
 ## Getting Started
 
 The project is intended to be ran and published via a 

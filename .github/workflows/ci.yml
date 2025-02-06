@@ -31,4 +31,7 @@ jobs:
         run: ruff format --check
 
       - name: test
-        run: pytest
+        run: pytest --cov=./src/ ./tests/
+
+      - name: coverage
+        run: coverage report

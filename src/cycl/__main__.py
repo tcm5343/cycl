@@ -1,4 +1,4 @@
 if __name__ == '__main__':
-	from cycl.cli import app
+    from cycl.cli import app
 
-	app()
+    app()

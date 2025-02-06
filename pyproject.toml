@@ -27,5 +27,18 @@ line-length = 125
 
 [tool.ruff.format]
 quote-style = 'single'
-indent-style = 'tab'
+indent-style = 'space'
 docstring-code-format = true
+
+[tool.coverage.run]
+branch = true
+source = ['./src']
+
+[tool.coverage.report]
+fail_under = 40
+show_missing = true
+skip_covered = true
+skip_empty = true
+omit = [
+    '__*__.py'
+]
