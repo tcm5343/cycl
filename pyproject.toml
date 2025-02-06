@@ -1,25 +1,44 @@
 [backend]
-requires = ["setuptools", "setuptools-scm"]
-build-backend = "setuptools.build_meta"
+requires = ['setuptools>=64', 'setuptools-scm>=8']
+build-backend = 'setuptools.build_meta'
 
 [project]
-name = "cycl"
-description = "cycl is a CLI and Python SDK to help identify cross-stack import/export circular dependencies, for a given AWS account and region."
-version = "0.0.1"
-readme = "README.md"
-keywords = ["aws", "cdk", "cycle", "circular", "dependency", "infrastructure"]
+name = 'cycl'
+version='0.0.2'
+description = 'CLI and Python SDK to help identify cross-stack import/export circular dependencies, for a given AWS account and region.'
+readme = 'README.md'
+keywords = ['aws', 'cdk', 'cycle', 'circular', 'dependency', 'infrastructure']
 classifiers = [
-    "Intended Audience :: Developers",
-    "Programming Language :: Python :: 3",
+    'Intended Audience :: Developers',
+    'Natural Language :: English',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python',
+    'Topic :: Software Development',
 ]
 
 [project.urls]
-Repository = "http://github.com/tcm5343/cycl"
+Repository = 'http://github.com/tcm5343/cycl'
+
+[project.scripts]
+cycl = 'cycl.cli:app'
 
 [tool.ruff]
 line-length = 125
 
 [tool.ruff.format]
-quote-style = "single"
-indent-style = "tab"
+quote-style = 'single'
+indent-style = 'space'
 docstring-code-format = true
+
+[tool.coverage.run]
+branch = true
+source = ['./src']
+
+[tool.coverage.report]
+fail_under = 40
+show_missing = true
+skip_covered = true
+skip_empty = true
+omit = [
+    '__*__.py'
+]

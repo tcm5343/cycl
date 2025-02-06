@@ -3,6 +3,11 @@ name: CI
 on:
   pull_request:
     types: [opened, edited, synchronize]
+  push:
+    branches: ['master', 'main']
+
+env:
+  PYTHONPATH: './src:./test'
 
 jobs:
   build:
@@ -10,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         os:
-        - 'ubuntu-latest'  
+        - 'ubuntu-latest'
         # - 'windows-latest'
         # - 'mac-latest'
     runs-on: ${{ matrix.os }}
@@ -29,4 +34,7 @@ jobs:
         run: ruff format --check
 
       - name: test
-        run: pytest
+        run: pytest --cov=./src/ ./tests/
+
+      - name: coverage
+        run: coverage report
