@@ -6,6 +6,9 @@ on:
   push:
     branches: ['master', 'main']
 
+env:
+  PYTHONPATH: './src:./test'
+
 jobs:
   build:
     strategy:
