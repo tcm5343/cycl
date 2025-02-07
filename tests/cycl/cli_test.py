@@ -17,8 +17,8 @@ def mock_build_build_dependency_graph():
 
 
 @pytest.fixture(autouse=True)
-def mock_configure_logging():
-    with patch.object(cli_module, 'configure_logging') as mock:
+def mock_configure_log():
+    with patch.object(cli_module, 'configure_log') as mock:
         yield mock
 
 
@@ -78,11 +78,11 @@ def test_app_check_cyclic_exit_zero(capsys, mock_build_build_dependency_graph):
         ('WARNING', logging.WARNING),
     ],
 )
-def test_app_check_acyclic_log_level(mock_configure_logging, arg_value, log_level):
+def test_app_check_acyclic_log_level(mock_configure_log, arg_value, log_level):
     sys.argv = ['cycl', 'check', '--log-level', arg_value]
 
     with pytest.raises(SystemExit) as err:
         app()
 
     assert err.value.code == 0
-    mock_configure_logging.assert_called_with(log_level)
+    mock_configure_log.assert_called_with(log_level)

@@ -5,7 +5,7 @@ import sys
 import networkx as nx
 
 from cycl import build_dependency_graph
-from cycl.utils.log_config import configure_logging
+from cycl.utils.log_config import configure_log
 
 
 def app() -> None:
@@ -24,7 +24,7 @@ def app() -> None:
     subparsers.add_parser('check', parents=[parent_parser], help='Check for cycles in AWS stack imports/exports')
 
     args = parser.parse_args()
-    configure_logging(getattr(logging, args.log_level))
+    configure_log(getattr(logging, args.log_level))
 
     if args.action == 'check':
         cycle_found = False

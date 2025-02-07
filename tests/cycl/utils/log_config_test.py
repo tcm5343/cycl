@@ -1,10 +1,10 @@
 import logging
 
-from cycl.utils.log_config import configure_logging
+from cycl.utils.log_config import configure_log
 
 
 def test_logging_format(caplog):
-    configure_logging(logging.INFO)
+    configure_log(logging.INFO)
 
     with caplog.at_level(logging.INFO):
         logging.info('Test log message')
