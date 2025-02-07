@@ -1,5 +1,5 @@
 # import importlib.metadata
 
-from .cycl import get_dependency_graph
+from .cycl import build_dependency_graph
 
 # __version__ = importlib.metadata.version(__package__ or __name__)
