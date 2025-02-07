@@ -1,20 +1,26 @@
-from typing import List, Dict, Optional
+from __future__ import annotations
 
-from botocore.client import BaseClient
-from botocore.exceptions import ClientError
+from logging import getLogger
+from typing import TYPE_CHECKING
+
 import boto3
+from botocore.exceptions import ClientError
+
+if TYPE_CHECKING:
+    from botocore.client import BaseClient
+
+log = getLogger(__name__)
 
 
 def parse_name_from_id(stack_id: str) -> str:
     try:
         return stack_id.split('/')[1]
-    except IndexError as err:
-        # log warning message
-        ...
+    except IndexError:
+        log.warning('unable to parse name from stack_id: %s', stack_id)
     return ''
 
 
-def list_all_exports(cfn_client: Optional[BaseClient] = None) -> List[Dict]:
+def get_all_exports(cfn_client: BaseClient | None = None) -> list[dict]:
     if cfn_client is None:
         cfn_client = boto3.client('cloudformation')
 
@@ -27,20 +33,19 @@ def list_all_exports(cfn_client: Optional[BaseClient] = None) -> List[Dict]:
     return exports
 
 
-def get_imports(export_name: str, cfn_client: Optional[BaseClient] = None) -> List[str]:
+def get_all_imports(export_name: str, cfn_client: BaseClient | None = None) -> list[str]:
     if cfn_client is None:
         cfn_client = boto3.client('cloudformation')
 
     imports = []
     try:
         resp = cfn_client.list_imports(ExportName=export_name)
-        print(resp)
         imports.extend(resp['Imports'])
         while token := resp.get('NextToken'):
             resp = cfn_client.list_imports(ExportName=export_name, NextToken=token)
             imports.extend(resp['Imports'])
     except ClientError as err:
-        # todo: add logging here
-        if not 'is not imported by any stack' in repr(err):
-            raise err
+        if 'is not imported by any stack' not in repr(err):
+            raise
+        log.debug('')
     return imports
