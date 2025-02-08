@@ -16,7 +16,7 @@ $(REQ_HASH): $(REQ_FILES)
 	stat -c %Y $(REQ_FILES) | md5sum | awk '{print $$1}' > $(REQ_HASH)
 	@echo "Installing dependencies..."
 	python3 -m venv ./.venv
-	pip install -e .[dev]
+	pip install -e . -r requirements-dev.txt
 
 install-deps: $(REQ_HASH)  ## Install dependencies if requirements files changed
 
@@ -36,5 +36,6 @@ clean:  ## Clean generated project files
 	rm -f .coverage
 	rm -rf ./.ruff_cache
 	rm -rf ./.pytest_cache
-	# rm -rf ./.venv
+	rm -rf ./.venv
+	rm -rf ./.tox
 	find . -type d -name "__pycache__" -exec rm -r {} +
