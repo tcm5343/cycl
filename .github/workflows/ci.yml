@@ -14,21 +14,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os:
-        - 'ubuntu-latest'
-        - 'windows-latest'
-        - 'mac-latest'
+        os: ['ubuntu-latest', 'windows-latest']
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: ${{ matrix.python-version }}
           cache: 'pip'
 
       - name: install deps
-        run: pip install -r requirements.txt -r requirements-dev.txt
+        run: pip install -r requirements-dev.txt
 
       - name: lint
         run: ruff check
@@ -37,9 +35,4 @@ jobs:
         run: ruff format --check
 
       - name: test
-        run: |
-          pip install --editable .
-          pytest --cov=./src/ ./tests/
-
-      - name: coverage
-        run: coverage report
+        run: tox -e py

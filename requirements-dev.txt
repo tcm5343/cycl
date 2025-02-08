@@ -3,3 +3,4 @@ pytest-subtests==0.14.1
 pytest-sugar==1.0.0
 pytest==8.3.4
 ruff==0.9.4
+tox==4.24.1
