@@ -15,6 +15,19 @@ classifiers = [
     'Programming Language :: Python',
     'Topic :: Software Development',
 ]
+dependencies = [
+    'boto3~=1.0',
+    'networkx~=3.0',
+]
+
+[project.optional-dependencies]
+dev = [
+    'pytest-cov==6.0.0',
+    'pytest-subtests==0.14.1',
+    'pytest-sugar==1.0.0',
+    'pytest==8.3.4',
+    'ruff==0.9.4',
+]
 
 [project.urls]
 Repository = 'http://github.com/tcm5343/cycl'
@@ -69,3 +82,21 @@ omit = [
 
 [tool.pytest.ini_options]
 log_cli_level = "INFO"
+addopts = ['--import-mode=importlib']
+
+[tool.tox]
+requires = ["tox>=4.19"]
+setenv = 'VIRTUALENV_DISCOVERY=pyenv'
+env_list = [
+    "3.8",
+    "3.9",
+    "3.10",
+    "3.11",
+    "3.12",
+    "3.13",
+]
+
+[tool.tox.env_run_base]
+allowlist_externals = ['pytest']
+description = "Run test under {base_python}"
+commands = [["pytest", '--cov=./src/', './tests/']]
