@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import json
+from logging import getLogger
 from os import walk
 from pathlib import Path
-from logging import getLogger
 
 log = getLogger(__name__)
 

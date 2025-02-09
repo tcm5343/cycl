@@ -39,7 +39,7 @@ def test_app_unsupported_action(capsys):
 
     assert err.value.code == 2
     console_output = capsys.readouterr().err
-    assert 'cycl: error: argument action: invalid choice: \'something\'' in console_output
+    assert "cycl: error: argument action: invalid choice: 'something'" in console_output
 
 
 def test_app_check_acyclic():
