@@ -3,8 +3,10 @@ requires = ['setuptools>=64', 'setuptools-scm>=8']
 build-backend = 'setuptools.build_meta'
 
 [project]
+
 name = 'cycl'
-version='0.0.2'
+version='0.1.1'
+requires-python = ">=3.8"
 description = 'CLI and Python SDK to help identify cross-stack import/export circular dependencies, for a given AWS account and region.'
 readme = 'README.md'
 keywords = ['aws', 'cdk', 'cycle', 'circular', 'dependency', 'infrastructure']
@@ -12,21 +14,18 @@ classifiers = [
     'Intended Audience :: Developers',
     'Natural Language :: English',
     'Programming Language :: Python :: 3',
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     'Programming Language :: Python',
     'Topic :: Software Development',
 ]
 dependencies = [
     'boto3~=1.0',
     'networkx~=3.0',
-]
-
-[project.optional-dependencies]
-dev = [
-    'pytest-cov==6.0.0',
-    'pytest-subtests==0.14.1',
-    'pytest-sugar==1.0.0',
-    'pytest==8.3.4',
-    'ruff==0.9.4',
 ]
 
 [project.urls]

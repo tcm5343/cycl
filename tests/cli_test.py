@@ -22,6 +22,26 @@ def mock_configure_log():
         yield mock
 
 
+def test_app_no_action(capsys):
+    sys.argv = ['cycl']
+    with pytest.raises(SystemExit) as err:
+        app()
+
+    assert err.value.code == 2
+    console_output = capsys.readouterr().err
+    assert 'cycl: error: the following arguments are required: action' in console_output
+
+
+def test_app_unsupported_action(capsys):
+    sys.argv = ['cycl', 'something']
+    with pytest.raises(SystemExit) as err:
+        app()
+
+    assert err.value.code == 2
+    console_output = capsys.readouterr().err
+    assert 'cycl: error: argument action: invalid choice: \'something\'' in console_output
+
+
 def test_app_check_acyclic():
     sys.argv = ['cycl', 'check']
     with pytest.raises(SystemExit) as err:
@@ -46,7 +66,7 @@ def test_app_check_cyclic(capsys, mock_build_build_dependency_graph):
 
     assert err.value.code == 1
     console_output = capsys.readouterr().out
-    assert 'Cycle found between nodes: [1, 2]' in console_output
+    assert 'cycle found between nodes: [1, 2]' in console_output
 
 
 def test_app_check_cyclic_exit_zero(capsys, mock_build_build_dependency_graph):
@@ -65,7 +85,7 @@ def test_app_check_cyclic_exit_zero(capsys, mock_build_build_dependency_graph):
 
     assert err.value.code == 0
     console_output = capsys.readouterr().out
-    assert 'Cycle found between nodes: [1, 2]' in console_output
+    assert 'cycle found between nodes: [1, 2]' in console_output
 
 
 @pytest.mark.parametrize(
