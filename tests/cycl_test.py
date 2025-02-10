@@ -9,18 +9,6 @@ from cycl.cycl import build_dependency_graph
 
 
 @pytest.fixture(autouse=True)
-def mock_boto3():
-    with patch.object(cycl_module, 'boto3') as mock:
-        yield mock
-
-
-@pytest.fixture(autouse=True)
-def mock_config():
-    with patch.object(cycl_module, 'Config') as mock:
-        yield mock
-
-
-@pytest.fixture(autouse=True)
 def mock_parse_name_from_id():
     with patch.object(cycl_module, 'parse_name_from_id') as mock:
         mock.side_effect = lambda x: f'{x}-stack-name'
@@ -135,7 +123,7 @@ def test_build_dependency_graph_returns_graph_with_multiple_exports(mock_get_all
         },
     }
 
-    def mock_get_all_imports_side_effect_func(export_name, *_args, **_kwargs):
+    def mock_get_all_imports_side_effect_func(export_name):
         if export_name == 'some-name-1':
             return [
                 'some-importing-stack-name-1',
@@ -302,16 +290,3 @@ def test_build_dependency_graph_returns_graph_with_cdk_out_path_and_no_existing_
 
     assert nx.is_directed_acyclic_graph(actual_graph)
     assert next(nx.simple_cycles(actual_graph), []) == []
-
-
-def test_config_defined_as_expected(mock_config, mock_boto3):
-    build_dependency_graph()
-
-    mock_config.assert_called_once_with(
-        retries={
-            'max_attempts': 10,
-            'mode': 'adaptive',
-        },
-        max_pool_connections=10,
-    )
-    mock_boto3.client.assert_called_once_with('cloudformation', config=mock_config.return_value)
