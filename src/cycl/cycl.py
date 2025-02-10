@@ -19,16 +19,15 @@ def build_dependency_graph(cdk_out_path: Path | None = None) -> nx.MultiDiGraph:
         cdk_out_imports = get_cdk_out_imports(Path(cdk_out_path))
 
     exports = get_all_exports()
-    # this could be made more efficient if get_all_exports returns a dict instead of a list, no need to iterate through
     for export_name in cdk_out_imports:
-        if not any(export_name == export['Name'] for export in exports):
+        if export_name not in exports:
             log.warning(
                 'found an export (%s) which has not been deployed yet about to be imported stack(s): (%s)',
                 export_name,
                 cdk_out_imports[export_name],
             )
 
-    for export in exports:
+    for export in exports.values():
         export['ExportingStackName'] = parse_name_from_id(export['ExportingStackId'])
         export['ImportingStackNames'] = get_all_imports(export_name=export['Name'])
         export.setdefault('ImportingStackNames', []).extend(cdk_out_imports.get(export['Name'], []))

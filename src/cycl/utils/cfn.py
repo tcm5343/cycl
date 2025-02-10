@@ -20,18 +20,18 @@ def parse_name_from_id(stack_id: str) -> str:
     return ''
 
 
-def get_all_exports(cfn_client: BaseClient | None = None) -> list[dict]:
+def get_all_exports(cfn_client: BaseClient | None = None) -> dict:
     if cfn_client is None:
         cfn_client = boto3.client('cloudformation')
 
-    exports = []
+    exports = {}
     resp = cfn_client.list_exports()
     log.debug(resp)
-    exports.extend(resp['Exports'])
+    exports.update({export['Name']: export for export in resp['Exports']})
     while token := resp.get('NextToken'):
         resp = cfn_client.list_exports(NextToken=token)
         log.debug(resp)
-        exports.extend(resp['Exports'])
+        exports.update({export['Name']: export for export in resp['Exports']})
     log.debug(exports)
     return exports
 

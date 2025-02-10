@@ -18,7 +18,7 @@ def mock_parse_name_from_id():
 @pytest.fixture(autouse=True)
 def mock_get_all_exports():
     with patch.object(cycl_module, 'get_all_exports') as mock:
-        mock.return_value = []
+        mock.return_value = {}
         yield mock
 
 
@@ -55,13 +55,13 @@ def test_build_dependency_graph_returns_graph(
         │
         ├──► some-importing-stack-name-2
     """
-    mock_get_all_exports.return_value = [
-        {
+    mock_get_all_exports.return_value = {
+        'some-name-1': {
             'ExportingStackId': 'some-exporting-stack-id-1',
             'Name': 'some-name-1',
             'Value': 'some-value-1',
-        }
-    ]
+        },
+    }
     mock_get_all_imports.return_value = [
         'some-importing-stack-name-1',
         'some-importing-stack-name-2',
@@ -110,18 +110,18 @@ def test_build_dependency_graph_returns_graph_with_multiple_exports(mock_get_all
     some-importing-stack-name-1  (No outgoing edges)
     some-importing-stack-name-2  (No outgoing edges)
     """
-    mock_get_all_exports.return_value = [
-        {
+    mock_get_all_exports.return_value = {
+        'some-name-1': {
             'ExportingStackId': 'some-exporting-stack-id-1',
             'Name': 'some-name-1',
             'Value': 'some-value-1',
         },
-        {
+        'some-name-2': {
             'ExportingStackId': 'some-exporting-stack-id-2',
             'Name': 'some-name-2',
             'Value': 'some-value-2',
         },
-    ]
+    }
 
     def mock_get_all_imports_side_effect_func(export_name):
         if export_name == 'some-name-1':
@@ -171,13 +171,13 @@ def test_build_dependency_graph_returns_graph_when_export_has_no_imports(
     Visual representation of expected output graph:
     some-exporting-stack-id-1-stack-name  (No outgoing edges)
     """
-    mock_get_all_exports.return_value = [
-        {
+    mock_get_all_exports.return_value = {
+        'some-name-1': {
             'ExportingStackId': 'some-exporting-stack-id-1',
             'Name': 'some-name-1',
             'Value': 'some-value-1',
         },
-    ]
+    }
     mock_get_all_imports.return_value = []
     expected_edges = []
     expected_nodes = ['some-exporting-stack-id-1-stack-name']
@@ -221,13 +221,13 @@ def test_build_dependency_graph_returns_graph_with_cdk_out_path(
         ├──► some-cdk-out-stack-name-1
     """
     mock_get_cdk_out_imports.return_value = {'some-name-1': ['some-cdk-out-stack-name-1']}
-    mock_get_all_exports.return_value = [
-        {
+    mock_get_all_exports.return_value = {
+        'some-name-1': {
             'ExportingStackId': 'some-exporting-stack-id-1',
             'Name': 'some-name-1',
             'Value': 'some-value-1',
-        }
-    ]
+        },
+    }
     mock_get_all_imports.return_value = [
         'some-importing-stack-name-1',
         'some-importing-stack-name-2',
@@ -270,7 +270,7 @@ def test_build_dependency_graph_returns_graph_with_cdk_out_path_and_no_existing_
     the imported export so it should be safe to ignore in our graph.
     """
     mock_get_cdk_out_imports.return_value = {'some-name-1': ['some-cdk-out-stack-name-1']}
-    mock_get_all_exports.return_value = []
+    mock_get_all_exports.return_value = {}
     mock_get_all_imports.return_value = []
     expected_edges = []
     expected_nodes = []
