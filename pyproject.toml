@@ -11,6 +11,7 @@ description = 'CLI and Python SDK to help identify cross-stack import/export cir
 readme = 'README.md'
 keywords = ['aws', 'cdk', 'cycle', 'circular', 'dependency', 'infrastructure']
 classifiers = [
+    'License :: OSI Approved :: MIT License',
     'Intended Audience :: Developers',
     'Natural Language :: English',
     'Programming Language :: Python :: 3',
