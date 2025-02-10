@@ -178,3 +178,6 @@ volume
 
 # aws
 aws
+
+# make marker files
+requirements*.hash

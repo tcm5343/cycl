@@ -17,9 +17,29 @@ def mock_build_build_dependency_graph():
 
 
 @pytest.fixture(autouse=True)
-def mock_configure_logging():
-    with patch.object(cli_module, 'configure_logging') as mock:
+def mock_configure_log():
+    with patch.object(cli_module, 'configure_log') as mock:
         yield mock
+
+
+def test_app_no_action(capsys):
+    sys.argv = ['cycl']
+    with pytest.raises(SystemExit) as err:
+        app()
+
+    assert err.value.code == 2
+    console_output = capsys.readouterr().err
+    assert 'cycl: error: the following arguments are required: action' in console_output
+
+
+def test_app_unsupported_action(capsys):
+    sys.argv = ['cycl', 'something']
+    with pytest.raises(SystemExit) as err:
+        app()
+
+    assert err.value.code == 2
+    console_output = capsys.readouterr().err
+    assert "cycl: error: argument action: invalid choice: 'something'" in console_output
 
 
 def test_app_check_acyclic():
@@ -46,7 +66,7 @@ def test_app_check_cyclic(capsys, mock_build_build_dependency_graph):
 
     assert err.value.code == 1
     console_output = capsys.readouterr().out
-    assert 'Cycle found between nodes: [1, 2]' in console_output
+    assert 'cycle found between nodes: [1, 2]' in console_output
 
 
 def test_app_check_cyclic_exit_zero(capsys, mock_build_build_dependency_graph):
@@ -65,7 +85,7 @@ def test_app_check_cyclic_exit_zero(capsys, mock_build_build_dependency_graph):
 
     assert err.value.code == 0
     console_output = capsys.readouterr().out
-    assert 'Cycle found between nodes: [1, 2]' in console_output
+    assert 'cycle found between nodes: [1, 2]' in console_output
 
 
 @pytest.mark.parametrize(
@@ -78,11 +98,11 @@ def test_app_check_cyclic_exit_zero(capsys, mock_build_build_dependency_graph):
         ('WARNING', logging.WARNING),
     ],
 )
-def test_app_check_acyclic_log_level(mock_configure_logging, arg_value, log_level):
+def test_app_check_acyclic_log_level(mock_configure_log, arg_value, log_level):
     sys.argv = ['cycl', 'check', '--log-level', arg_value]
 
     with pytest.raises(SystemExit) as err:
         app()
 
     assert err.value.code == 0
-    mock_configure_logging.assert_called_with(log_level)
+    mock_configure_log.assert_called_with(log_level)
