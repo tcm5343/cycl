@@ -19,12 +19,12 @@ if TYPE_CHECKING:
 log = getLogger(__name__)
 
 
-def __get_imports_thread(export: tuple[str, dict], cfn_client: BaseClient) -> dict:
+def __get_imports_mapper(export: tuple[str, dict], cfn_client: BaseClient) -> dict:
     export[1]['ExportingStackName'] = parse_name_from_id(export[1]['ExportingStackId'])
     export[1].setdefault('ImportingStackNames', []).extend(
         get_all_imports(export_name=export[1]['Name'], cfn_client=cfn_client)
     )
-    return export
+    return {export[0]: export[1]}
 
 
 def __map_existing_exports_to_imports(exports: dict) -> dict:
@@ -44,23 +44,22 @@ def __map_existing_exports_to_imports(exports: dict) -> dict:
     for item in exports.items():
         q.put(item)
 
+    futures = []
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = []
         while not q.empty():
-            futures.append(executor.submit(__get_imports_thread, export=q.get(), cfn_client=cfn_client))
+            futures.append(executor.submit(__get_imports_mapper, export=q.get(), cfn_client=cfn_client))
 
-        for future in futures:
-            err = future.exception()
-            if err:
-                log.error(err)
-            else:
-                future_result = future.result()
-                res[future_result[0]] = future_result[1]
-
+    for future in futures:
+        err = future.exception()
+        if err:
+            log.error(err)
+        else:
+            res.update(future.result())
     return res
 
 
-def get_graph_data(cdk_out_path: Path | None = None) -> dict:
+def __get_graph_data(cdk_out_path: Path | None = None) -> dict:
+    """ TODO: make this public and test """
     cdk_out_imports = {}
     if cdk_out_path:
         cdk_out_imports = get_cdk_out_imports(Path(cdk_out_path))
