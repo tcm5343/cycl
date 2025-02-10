@@ -59,7 +59,7 @@ def __map_existing_exports_to_imports(exports: dict) -> dict:
 
 
 def __get_graph_data(cdk_out_path: Path | None = None) -> dict:
-    """ TODO: make this public and test """
+    """TODO: make this public and test"""
     cdk_out_imports = {}
     if cdk_out_path:
         cdk_out_imports = get_cdk_out_imports(Path(cdk_out_path))
@@ -80,7 +80,7 @@ def __get_graph_data(cdk_out_path: Path | None = None) -> dict:
 
 def build_dependency_graph(cdk_out_path: Path | None = None) -> nx.MultiDiGraph:
     dep_graph = nx.MultiDiGraph()
-    mapped_exports = get_graph_data(cdk_out_path)
+    mapped_exports = __get_graph_data(cdk_out_path)
     for export in mapped_exports.values():
         edges = [
             (export['ExportingStackName'], importing_stack_name) for importing_stack_name in export['ImportingStackNames']
