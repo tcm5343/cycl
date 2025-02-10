@@ -39,14 +39,17 @@ def test_parse_name_from_id(stack_id, expected):
 
 
 @pytest.mark.parametrize(
-    'expected_exports',
+    ('list_exports_return', 'expected_exports'),
     [
-        [{'ExportingStackId': 'some-exporting-stack-id', 'Name': 'some-name', 'Value': 'some-value'}],
-        [],
+        (
+            [{'ExportingStackId': 'some-exporting-stack-id', 'Name': 'some-name', 'Value': 'some-value'}],
+            {'some-name': {'ExportingStackId': 'some-exporting-stack-id', 'Name': 'some-name', 'Value': 'some-value'}},
+        ),
+        ([], {}),
     ],
 )
-def test_get_all_exports_returns_an_export(expected_exports, mock_boto3, cfn_client_mock):
-    cfn_client_mock.list_exports.return_value = {'Exports': expected_exports}
+def test_get_all_exports_returns_an_export(list_exports_return, expected_exports, mock_boto3, cfn_client_mock):
+    cfn_client_mock.list_exports.return_value = {'Exports': list_exports_return}
 
     actual_exports = get_all_exports()
 
@@ -55,7 +58,7 @@ def test_get_all_exports_returns_an_export(expected_exports, mock_boto3, cfn_cli
 
 
 def test_get_all_exports_conditionally_creates_client(mock_boto3, cfn_client_mock):
-    expected_exports = []
+    expected_exports = {}
     cfn_client_mock.list_exports.return_value = {'Exports': expected_exports}
 
     actual_exports = get_all_exports(cfn_client=cfn_client_mock)
@@ -67,7 +70,10 @@ def test_get_all_exports_conditionally_creates_client(mock_boto3, cfn_client_moc
 def test_get_all_exports_uses_next_token(mock_boto3, cfn_client_mock):
     export1 = {'ExportingStackId': 'some-exporting-stack-id-1', 'Name': 'some-name-1', 'Value': 'some-value-1'}
     export2 = {'ExportingStackId': 'some-exporting-stack-id-2', 'Name': 'some-name-2', 'Value': 'some-value-2'}
-    expected_exports = [export1, export2]
+    expected_exports = {
+        export1['Name']: export1,
+        export2['Name']: export2,
+    }
     cfn_client_mock.list_exports.side_effect = [
         {'Exports': [export1], 'NextToken': 'some-token'},
         {'Exports': [export2]},
