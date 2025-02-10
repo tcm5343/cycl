@@ -60,9 +60,7 @@ def __map_existing_exports_to_imports(exports: dict) -> dict:
     return res
 
 
-def build_dependency_graph(cdk_out_path: Path | None = None) -> nx.MultiDiGraph:
-    dep_graph = nx.MultiDiGraph()
-
+def get_graph_data(cdk_out_path: Path | None = None) -> dict:
     cdk_out_imports = {}
     if cdk_out_path:
         cdk_out_imports = get_cdk_out_imports(Path(cdk_out_path))
@@ -78,7 +76,12 @@ def build_dependency_graph(cdk_out_path: Path | None = None) -> nx.MultiDiGraph:
                 cdk_out_imports[export_name],
             )
 
-    mapped_exports = __map_existing_exports_to_imports(exports=exports)
+    return __map_existing_exports_to_imports(exports=exports)
+
+
+def build_dependency_graph(cdk_out_path: Path | None = None) -> nx.MultiDiGraph:
+    dep_graph = nx.MultiDiGraph()
+    mapped_exports = get_graph_data(cdk_out_path)
     for export in mapped_exports.values():
         edges = [
             (export['ExportingStackName'], importing_stack_name) for importing_stack_name in export['ImportingStackNames']
