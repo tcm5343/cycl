@@ -1,4 +1,5 @@
 import argparse
+import json
 import logging
 import pathlib
 import sys
@@ -13,38 +14,61 @@ log = getLogger(__name__)
 
 
 def app() -> None:
-    parser = argparse.ArgumentParser(description='Check for cross-stack import/export circular dependencies.')
-    subparsers = parser.add_subparsers(dest='action', required=True)
+    parser = argparse.ArgumentParser(prog='cycl', description='Check for cross-stack import/export circular dependencies.')
+    sp = parser.add_subparsers(dest='cmd', required=True)
 
-    parent_parser = argparse.ArgumentParser(add_help=False)
-    parent_parser.add_argument('--exit-zero', action='store_true', help='exit 0 regardless of result')
-    parent_parser.add_argument(
-        '--log-level',
-        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
-        default='WARNING',
-        help='set the logging level (default: WARNING)',
-    )
-    parent_parser.add_argument(
-        '--cdk-out',
-        type=pathlib.Path,
-        help='path to cdk.out, where stacks are CDK synthesized to CFN templates',
-    )
+    check_p = sp.add_parser('check', help='Check for cycles between stacks in AWS stack imports/exports')
+    check_p.add_argument('--exit-zero', action='store_true', help='Exit 0 regardless of result of cycle check')
 
-    subparsers.add_parser('check', parents=[parent_parser], help='Check for cycles in AWS stack imports/exports')
+    topo_p = sp.add_parser('topo', help='Find topological generations if dependencies are acyclic')
+
+    # global options
+    for p in [check_p, topo_p]:
+        p.add_argument(
+            '--log-level',
+            choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+            default='WARNING',
+            help='Set the logging level (default: WARNING)',
+        )
+        # p.add_argument(
+        #     "--platform",
+        #     choices=["AWS"],
+        #     default='AWS',
+        #     help="Cloud platform to interact with",
+        # )
+        p.add_argument(
+            '--cdk-out',
+            type=pathlib.Path,
+            help='Path to cdk.out, where stacks are CDK synthesized to CFN templates',
+        )
+        # p.add_argument(
+        #     '-q', "--quiet",
+        #     type=pathlib.Path,
+        #     default=argparse.SUPPRESS,
+        #     help="Suppress output",
+        # )
+
+    if len(sys.argv) == 1:
+        parser.print_help()
+        sys.exit(0)
 
     args = parser.parse_args()
     configure_log(getattr(logging, args.log_level))
-    log.info(args)
 
-    if args.action == 'check':
-        cycle_found = False
-        graph = build_dependency_graph(cdk_out_path=args.cdk_out)
-        cycles = nx.simple_cycles(graph)
-        for cycle in cycles:
-            cycle_found = True
-            print(f'cycle found between nodes: {cycle}')
-        if cycle_found and not args.exit_zero:
+    dep_graph = build_dependency_graph(cdk_out_path=args.cdk_out)
+    cycles = list(nx.simple_cycles(dep_graph))
+    for cycle in cycles:
+        print(f'cycle found between nodes: {cycle}')
+
+    if args.cmd == 'check':
+        if cycles and not args.exit_zero:
             sys.exit(1)
+    elif args.cmd == 'topo':
+        if cycles:
+            print('\nerror: graph is cyclic, topological generations can only be computed on an acyclic graph')
+            sys.exit(1)
+        generations = [sorted(generation) for generation in nx.topological_generations(dep_graph)]
+        print(json.dumps(generations, indent=2))
     sys.exit(0)
 
 
