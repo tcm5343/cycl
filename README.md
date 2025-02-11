@@ -7,6 +7,8 @@
 
 cycl is a CLI and Python SDK to help identify cross-stack import/export circular dependencies, for a given AWS account and region.
 
+The successor to [circular-dependency-detector](https://github.com/tcm5343/circular-dependency-detector), which was built at the University of Texas at Austin.
+
 ## Getting started
 
 Install `cycl` by running `pip install cycl`.
@@ -16,10 +18,6 @@ Install `cycl` by running `pip install cycl`.
 - `cycl check --exit-zero` - exit 0 regardless of result
 - `cycl check --log-level` - set the logging level (default: WARNING)
 - `cycl check --cdk-out /path/to/cdk.out` - path to cdk.out, where stacks are CDK synthesized to CFN templates
-
-### SDK
-
-...
 
 ## How to use cycl?
 
@@ -34,4 +32,4 @@ Over the lifetime of a project, circular references are bound to be introduced. 
 
 ## Contributing
 
-`cycl` is being actively developed, instructions to come as it becomes more stable.
+`cycl` is being actively developed, instructions will come as it becomes more stable.

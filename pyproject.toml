@@ -5,22 +5,22 @@ build-backend = 'setuptools.build_meta'
 [project]
 
 name = 'cycl'
-version='0.1.1'
-requires-python = ">=3.8"
+version='0.1.0'
+requires-python = '>=3.8'
 description = 'CLI and Python SDK to help identify cross-stack import/export circular dependencies, for a given AWS account and region.'
 readme = 'README.md'
-keywords = ['aws', 'cdk', 'cycle', 'circular', 'dependency', 'infrastructure']
+keywords = ['aws', 'cdk', 'cycle', 'circular', 'dependency', 'infrastructure', 'boto3', 'cloud']
 classifiers = [
-    'License :: OSI Approved :: MIT License',
     'Intended Audience :: Developers',
+    'License :: OSI Approved :: MIT License',
     'Natural Language :: English',
+    'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3.12',
+    'Programming Language :: Python :: 3.13',
+    'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
     'Programming Language :: Python :: 3',
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
     'Programming Language :: Python',
     'Topic :: Software Development',
 ]
@@ -81,5 +81,5 @@ omit = [
 ]
 
 [tool.pytest.ini_options]
-log_cli_level = "INFO"
+log_cli_level = 'INFO'
 addopts = ['--import-mode=importlib']
