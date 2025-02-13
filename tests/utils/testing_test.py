@@ -7,6 +7,7 @@ from cycl.utils.testing import is_circular_reversible_permutation
 # neat that every permutation of 1, 2, 3 is True
 permutations = list(itertools.permutations([1, 2, 3]))
 
+
 @pytest.mark.parametrize(
     ('lst', 'candidate', 'expected'),
     [

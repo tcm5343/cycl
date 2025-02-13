@@ -63,8 +63,6 @@ def app() -> None:
     args = parser.parse_args()
     configure_log(getattr(logging, args.log_level))
 
-    print(args.ignore_nodes)
-
     dep_graph = build_dependency_graph(cdk_out_path=args.cdk_out, nodes_to_ignore=args.ignore_nodes)
     cycles = list(nx.simple_cycles(dep_graph))
     for cycle in cycles:

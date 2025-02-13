@@ -361,9 +361,7 @@ def test_build_dependency_graph_returns_cyclic_graph(
         'some-exporting-stack-id-1-stack-name',
         'some-exporting-stack-id-2-stack-name',
     ]
-    expected_cycles = [
-        ['some-exporting-stack-id-2-stack-name', 'some-exporting-stack-id-1-stack-name']
-    ]
+    expected_cycles = [['some-exporting-stack-id-2-stack-name', 'some-exporting-stack-id-1-stack-name']]
 
     actual_graph = build_dependency_graph()
 
@@ -424,9 +422,7 @@ def test_build_dependency_graph_make_cyclic_graph_acyclic_with_ignore_nodes(
         return []  # handles export with no import
 
     mock_get_all_imports.side_effect = mock_get_all_imports_side_effect_func
-    expected_edges = [
-        ('some-exporting-stack-id-1-stack-name', 'some-exporting-stack-id-2-stack-name')
-    ]
+    expected_edges = [('some-exporting-stack-id-1-stack-name', 'some-exporting-stack-id-2-stack-name')]
     expected_nodes = [
         'some-exporting-stack-id-1-stack-name',
         'some-exporting-stack-id-2-stack-name',
