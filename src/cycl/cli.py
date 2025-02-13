@@ -41,10 +41,18 @@ def app() -> None:
             type=pathlib.Path,
             help='Path to cdk.out, where stacks are CDK synthesized to CFN templates',
         )
+        p.add_argument(
+            '-in',
+            '--ignore-nodes',
+            nargs='+',
+            default=[],
+            type=str,
+            help='List of nodes to ignore when building the graph (ex. --ignore-nodes s1 s2 ...)',
+        )
         # p.add_argument(
         #     '-q', "--quiet",
         #     type=pathlib.Path,
-        #     default=argparse.SUPPRESS,
+        #     action='store_true',
         #     help="Suppress output",
         # )
 
@@ -55,7 +63,7 @@ def app() -> None:
     args = parser.parse_args()
     configure_log(getattr(logging, args.log_level))
 
-    dep_graph = build_dependency_graph(cdk_out_path=args.cdk_out)
+    dep_graph = build_dependency_graph(cdk_out_path=args.cdk_out, nodes_to_ignore=args.ignore_nodes)
     cycles = list(nx.simple_cycles(dep_graph))
     for cycle in cycles:
         print(f'cycle found between nodes: {cycle}')
@@ -65,7 +73,7 @@ def app() -> None:
             sys.exit(1)
     elif args.cmd == 'topo':
         if cycles:
-            print('\nerror: graph is cyclic, topological generations can only be computed on an acyclic graph')
+            log.error('graph is cyclic, topological generations can only be computed on an acyclic graph')
             sys.exit(1)
         generations = [sorted(generation) for generation in nx.topological_generations(dep_graph)]
         print(json.dumps(generations, indent=2))
