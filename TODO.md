@@ -4,8 +4,10 @@
   - `cycl check --ignore`
   - `cycl topo --ignore`
 - reducing the stacks, for example, a tag on a stack representing the github repo name
-  - `cycl check --reduce-dependencies-on`
-  - `cycl check --reduce-generations-on`
+  - `cycl check --reduce-on`
+  - `cycl check --reduce-on-jq`
+  - `cycl check --reduce-on-jmespath`
+  - `cycl topo --reduce-on {rootstack}` # can we resolve the root stack through cdk.out
 
 - [ ] [fully configure dependabot](https://docs.github.com/en/code-security/dependabot/working-with-dependabot/automating-dependabot-with-github-actions)
 - [ ] configure make file

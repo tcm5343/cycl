@@ -26,6 +26,7 @@ def get_dependency_graph_data(cdk_out_path: Path | None = None) -> dict:
     )
     cfn_client = boto3.client('cloudformation', config=boto_config)
 
+    log.info('getting all exports')
     exports = get_all_exports(cfn_client=cfn_client)
     for export_name in cdk_out_imports:
         if export_name not in exports:
@@ -35,20 +36,25 @@ def get_dependency_graph_data(cdk_out_path: Path | None = None) -> dict:
                 cdk_out_imports[export_name],
             )
 
+    log.info('getting imports for %s exports', len(exports))
     for export in exports.values():
         export['ExportingStackName'] = parse_name_from_id(export['ExportingStackId'])
         export['ImportingStackNames'] = get_all_imports(export_name=export['Name'], cfn_client=cfn_client)
         export.setdefault('ImportingStackNames', []).extend(cdk_out_imports.get(export['Name'], []))
         if len(export['ImportingStackNames']) == 0:
-            log.info('Export found with no import: %s from %s', export['Name'], export['ExportingStackName'])
+            log.warning('Export found with no import: %s from %s', export['Name'], export['ExportingStackName'])
     return exports
 
 
-def build_dependency_graph(cdk_out_path: Path | None = None) -> nx.MultiDiGraph:
+def build_dependency_graph(cdk_out_path: Path | None = None, nodes_to_ignore: list[str] | None = None) -> nx.MultiDiGraph:
+    nodes_to_ignore = nodes_to_ignore or []
     dep_graph = nx.MultiDiGraph()
     graph_data = get_dependency_graph_data(cdk_out_path)
 
+    log.info('building dependency graph from graph data')
     for export in graph_data.values():
+        if export['ExportingStackName'] in nodes_to_ignore:
+            continue
         edges = [
             (export['ExportingStackName'], importing_stack_name) for importing_stack_name in export['ImportingStackNames']
         ]
