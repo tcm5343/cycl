@@ -27,7 +27,7 @@ validate:  ## Validate the project is linted and formatted
 	mypy ./src/
 
 test:  ## Run unit tests and generate coverage report
-	pytest --cov=./src/ ./tests/
+	pytest --cov=./src/ $(ARGS)
 
 clean:  ## Clean generated project files
 	rm -f $(REQ_CACHE)
