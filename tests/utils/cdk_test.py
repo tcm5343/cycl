@@ -13,14 +13,17 @@ from cycl.utils.cdk import InvalidCdkOutPathError, get_cdk_out_imports
 def cdk_template_mock():
     return {
         'Resources': {
-            'MyResource': {'Type': 'AWS::S3::Bucket', 'Properties': {'BucketName': {'Fn::ImportValue': 'MyExportedBucket1'}}}
+            'MyResource': {
+                'Type': 'AWS::S3::Bucket',
+                'Properties': {'BucketName': {'Fn::ImportValue': 'some-export-name-1'}},
+            }
         }
     }
 
 
 @pytest.fixture
 def cdk_manifest_mock():
-    return {'artifacts': {'test-stack-1': {'displayName': 'TestStack1'}}}
+    return {'artifacts': {'test-stack-1': {'displayName': 'some-stack-display-name-1'}}}
 
 
 @pytest.fixture
@@ -60,15 +63,15 @@ def test_get_cdk_out_imports_no_imports(cdk_out_mock, cdk_template_mock):
 
 
 def test_get_cdk_out_imports_has_imports(cdk_out_mock):
-    expected = {'MyExportedBucket1': ['TestStack1']}
+    expected = {'some-export-name-1': ['some-stack-display-name-1']}
     actual = get_cdk_out_imports(cdk_out_mock)
     assert actual == expected
 
 
 def test_get_cdk_out_imports_has_imports_in_list(cdk_out_mock, cdk_template_mock):
-    expected = {'MyExportedBucket1': ['TestStack1']}
+    expected = {'some-export-name-1': ['some-stack-display-name-1']}
     cdk_template_mock['Resources']['MyResource']['Properties']['BucketName'] = [
-        {'Fn::ImportValue': 'MyExportedBucket1'},
+        {'Fn::ImportValue': 'some-export-name-1'},
     ]
 
     template_path = cdk_out_mock / 'test-stack-1.template.json'
@@ -85,7 +88,7 @@ def test_get_cdk_out_raises_error_if_no_cdk_out_file_in_folder(cdk_out_mock):
     cdk_out_file.unlink(missing_ok=False)
 
     with pytest.raises(
-        InvalidCdkOutPathError, match='unable to find CDK stack synthesis output in provided directory, did you synth?'
+        InvalidCdkOutPathError, match=rf'File named cdk.out not found in {cdk_out_mock}. Did you run `cdk synth`?'
     ):
         get_cdk_out_imports(cdk_out_mock)
 
@@ -93,33 +96,47 @@ def test_get_cdk_out_raises_error_if_no_cdk_out_file_in_folder(cdk_out_mock):
 def test_get_cdk_out_raises_error_if_no_cdk_out_folder(cdk_out_mock):
     shutil.rmtree(cdk_out_mock)
 
-    with pytest.raises(InvalidCdkOutPathError, match="path doesn't exist"):
+    with pytest.raises(InvalidCdkOutPathError, match=rf'Provided path does not exist or is not a directory: {cdk_out_mock}'):
         get_cdk_out_imports(cdk_out_mock)
 
 
 def test_get_cdk_out_raises_error_if_pointing_to_file(cdk_out_mock):
-    with pytest.raises(InvalidCdkOutPathError, match='path must be a directory'):
+    with pytest.raises(InvalidCdkOutPathError, match=rf'Provided path does not exist or is not a directory: {cdk_out_mock}'):
         get_cdk_out_imports(cdk_out_mock / 'cdk.out')
 
 
-def test_get_cdk_out_adds_cdk_out_dir_if_not_already_there(cdk_out_mock, tmp_path, mock_walk):
+def test_get_cdk_out_adds_cdk_out_dir_if_not_already_there(cdk_out_mock, cdk_template_mock, cdk_manifest_mock):
     """
     example is infra/ being passed instead of infra/cdk.out, simply append cdk.out/
     """
-    get_cdk_out_imports(tmp_path)
-    mock_walk.assert_called_once_with(cdk_out_mock)
+    expected = {'some-export-name-1': ['some-stack-display-name-1']}
+
+    cdk_template_mock['Resources']['MyResource']['Properties']['BucketName']['Fn::ImportValue'] = 'some-export-name-2'
+    template_path = cdk_out_mock.parent / 'test-stack-2.template.json'
+    with template_path.open('w') as f:
+        json.dump(cdk_template_mock, f)
+
+    cdk_manifest_mock['artifacts']['test-stack-2'] = {
+        'displayName': 'some-stack-display-name-2',
+    }
+    manifest_path = cdk_out_mock.parent / 'manifest.json'
+    with manifest_path.open('w') as f:
+        json.dump(cdk_manifest_mock, f)
+
+    actual = get_cdk_out_imports(cdk_out_mock.parent)
+    assert actual == expected
 
 
 def test_get_cdk_out_imports_with_two_stacks(cdk_out_mock, cdk_template_mock, cdk_manifest_mock):
-    expected = {'MyExportedBucket1': ['TestStack1'], 'MyExportedBucket2': ['TestStack2']}
+    expected = {'some-export-name-1': ['some-stack-display-name-1'], 'some-export-name-2': ['some-stack-display-name-2']}
 
-    cdk_template_mock['Resources']['MyResource']['Properties']['BucketName']['Fn::ImportValue'] = 'MyExportedBucket2'
+    cdk_template_mock['Resources']['MyResource']['Properties']['BucketName']['Fn::ImportValue'] = 'some-export-name-2'
     template_path = cdk_out_mock / 'test-stack-2.template.json'
     with template_path.open('w') as f:
         json.dump(cdk_template_mock, f)
 
     cdk_manifest_mock['artifacts']['test-stack-2'] = {
-        'displayName': 'TestStack2',
+        'displayName': 'some-stack-display-name-2',
     }
     manifest_path = cdk_out_mock / 'manifest.json'
     with manifest_path.open('w') as f:
@@ -129,6 +146,63 @@ def test_get_cdk_out_imports_with_two_stacks(cdk_out_mock, cdk_template_mock, cd
     assert actual == expected
 
 
-@pytest.mark.skip
-def test_get_cdk_out_imports_with_stages():
-    """TODO: determine what the expected structure is"""
+@pytest.mark.parametrize(
+    'manifest_body',
+    [
+        {'artifacts': {'test-stack-1': {'displayName': 'some-stack-display-name-1'}, 'test-stack-2': {}}},
+        {'artifacts': {'test-stack-1': {'displayName': 'some-stack-display-name-1'}}},
+    ],
+)
+def test_get_cdk_out_imports_skips_when_unable_to_resolve_stack_name(
+    cdk_out_mock, cdk_template_mock, cdk_manifest_mock, manifest_body
+):
+    expected = {'some-export-name-1': ['some-stack-display-name-1']}
+
+    cdk_template_mock['Resources']['MyResource']['Properties']['BucketName']['Fn::ImportValue'] = 'some-export-name-2'
+    template_path = cdk_out_mock / 'test-stack-2.template.json'
+    with template_path.open('w') as f:
+        json.dump(cdk_template_mock, f)
+
+    cdk_manifest_mock = manifest_body
+    manifest_path = cdk_out_mock / 'manifest.json'
+    with manifest_path.open('w') as f:
+        json.dump(cdk_manifest_mock, f)
+
+    actual = get_cdk_out_imports(cdk_out_mock)
+    assert actual == expected
+
+
+def test_get_cdk_out_imports_with_stages(cdk_out_mock, cdk_template_mock, cdk_manifest_mock):
+    expected = {'some-export-name-1': ['some-stack-display-name-1'], 'some-export-name-2': ['some-stack-display-name-2']}
+
+    cdk_template_mock['Resources']['MyResource']['Properties']['BucketName']['Fn::ImportValue'] = 'some-export-name-2'
+    stage_path = cdk_out_mock / 'some-stage-1'
+    stage_path.mkdir()
+    template_path = stage_path / 'test-stack-2.template.json'
+    with template_path.open('w') as f:
+        json.dump(cdk_template_mock, f)
+
+    cdk_manifest_mock['artifacts']['test-stack-2'] = {
+        'displayName': 'some-stage/some-stack-display-name-2',  # note the stage prefix
+    }
+    manifest_path = stage_path / 'manifest.json'
+    with manifest_path.open('w') as f:
+        json.dump(cdk_manifest_mock, f)
+
+    actual = get_cdk_out_imports(cdk_out_mock)
+    assert actual == expected
+
+
+def test_get_cdk_out_imports_grabs_stack_name_first(cdk_out_mock, cdk_manifest_mock):
+    expected = {'some-export-name-1': ['some-stack-name-1']}
+
+    cdk_manifest_mock['artifacts']['test-stack-1']['properties'] = {
+        'stackName': 'some-stack-name-1',
+    }
+
+    manifest_path = cdk_out_mock / 'manifest.json'
+    with manifest_path.open('w') as f:
+        json.dump(cdk_manifest_mock, f)
+
+    actual = get_cdk_out_imports(cdk_out_mock)
+    assert actual == expected

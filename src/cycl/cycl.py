@@ -17,6 +17,7 @@ def get_dependency_graph_data(cdk_out_path: Path | None = None) -> dict:
     cdk_out_imports = {}
     if cdk_out_path:
         cdk_out_imports = get_cdk_out_imports(Path(cdk_out_path))
+    log.info('cdk_out_imports: %s', cdk_out_imports)
 
     boto_config = Config(
         retries={
@@ -48,7 +49,7 @@ def get_dependency_graph_data(cdk_out_path: Path | None = None) -> dict:
 
 def build_dependency_graph(cdk_out_path: Path | None = None, nodes_to_ignore: list[str] | None = None) -> nx.MultiDiGraph:
     nodes_to_ignore = nodes_to_ignore or []
-    dep_graph = nx.MultiDiGraph()
+    dep_graph: nx.MultiDiGraph = nx.MultiDiGraph()
     graph_data = get_dependency_graph_data(cdk_out_path)
 
     log.info('building dependency graph from graph data')
