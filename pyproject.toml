@@ -96,8 +96,3 @@ commands = [
     ["make", "validate"],
     ["make", "test", "ARGS={posargs}"]
 ]
-
-# [tool.tox.env.docs]
-# depends = []
-# extras = ["doc"]
-# commands = [["sphinx-build", "-W", "-n", "docs", "build/sphinx"]]
