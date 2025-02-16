@@ -30,12 +30,6 @@ def app() -> None:
             default='WARNING',
             help='Set the logging level (default: WARNING)',
         )
-        # p.add_argument(
-        #     "--platform",
-        #     choices=["AWS"],
-        #     default='AWS',
-        #     help="Cloud platform to interact with",
-        # )
         p.add_argument(
             '--cdk-out',
             type=pathlib.Path,
@@ -49,12 +43,6 @@ def app() -> None:
             type=str,
             help='List of nodes to ignore when building the graph (ex. --ignore-nodes s1 s2 ...)',
         )
-        # p.add_argument(
-        #     '-q', "--quiet",
-        #     type=pathlib.Path,
-        #     action='store_true',
-        #     help="Suppress output",
-        # )
 
     if len(sys.argv) == 1:
         parser.print_help()

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 from logging import getLogger
-from os import walk
 from pathlib import Path
 
 log = getLogger(__name__)
@@ -39,30 +38,36 @@ def __get_import_values_from_template(file_path: Path) -> list[str]:
 
 
 def __get_stack_name_from_manifest(path_to_manifest: Path, template_file_name: str) -> str:
+    """
+    Grabs the stack name, if set, or parses stack name from the displayName (construct id) of the stack
+    """
     with Path.open(path_to_manifest) as f:
         json_data = json.load(f)
-    return json_data['artifacts'][template_file_name.split('.')[0]]['displayName']
+
+    artifact_id = template_file_name.split('.')[0]
+    artifact = json_data['artifacts'].get(artifact_id)
+    if not artifact:
+        log.warning('No artifact found in manifest for %s', template_file_name)
+        return ''
+
+    stack_name = artifact.get('properties', {}).get('stackName')
+    display_name_split = artifact.get('displayName', '').split('/')[-1]
+    return stack_name or display_name_split
 
 
 def __validate_cdk_out_path(cdk_out_path: Path) -> Path:
-    errors = []
-    if Path.exists(cdk_out_path):
-        if not cdk_out_path.is_dir():
-            errors.append('path must be a directory')
-    else:
-        errors.append("path doesn't exist")
+    cdk_out_path = Path(cdk_out_path).resolve()
+    if not cdk_out_path.exists() or not cdk_out_path.is_dir():
+        err_msg = f'Provided path does not exist or is not a directory: {cdk_out_path}'
+        raise InvalidCdkOutPathError(err_msg)
 
     # handle if path is where cdk.out/ is or is directly to cdk.out
-    if Path(cdk_out_path).name != 'cdk.out':
-        cdk_out_path = Path(cdk_out_path) / 'cdk.out'
+    if cdk_out_path.name != 'cdk.out':
+        cdk_out_path = cdk_out_path / 'cdk.out'
 
-    if not Path.exists(Path(cdk_out_path) / 'cdk.out'):
-        errors.append('unable to find CDK stack synthesis output in provided directory, did you synth?')
-
-    if errors:
-        errors_formatted = '\n\t - '.join(errors)
-        error_message = f'Invalid path provided for --cdk-out {cdk_out_path}:\n\t - {errors_formatted}'
-        raise InvalidCdkOutPathError(error_message)
+    if not (cdk_out_path / 'cdk.out').exists():
+        err_msg = f'File named cdk.out not found in {cdk_out_path}. Did you run `cdk synth`?'
+        raise InvalidCdkOutPathError(err_msg)
 
     return cdk_out_path
 
@@ -78,14 +83,20 @@ def get_cdk_out_imports(cdk_out_path: Path) -> dict[str, list[str]]:
     """
     cdk_out_path = __validate_cdk_out_path(cdk_out_path)
 
-    stack_import_mapping = {}
-    for root, _dirs, files in walk(cdk_out_path):
-        for file in files:
-            if file.endswith('template.json'):
-                imported_export_names = __get_import_values_from_template(Path(root) / file)
-                if imported_export_names:
-                    manifest_path = Path(root) / 'manifest.json'
-                    stack_name = __get_stack_name_from_manifest(manifest_path, file)
-                    for export_name in imported_export_names:
-                        stack_import_mapping.setdefault(export_name, []).append(stack_name)
+    stack_import_mapping: dict[str, list[str]] = {}
+    for template_file in cdk_out_path.rglob('*.template.json'):
+        log.info('Processing template: %s', template_file)
+        imported_export_names = __get_import_values_from_template(template_file)
+
+        log.info('found imported export names: %s', imported_export_names)
+        if imported_export_names:
+            manifest_path = template_file.parent / 'manifest.json'
+            log.info('looking in manifest: %s', manifest_path)
+            stack_name = __get_stack_name_from_manifest(manifest_path, template_file.name)
+            if not stack_name:
+                log.warning('unable to determine stack name for template: %s', template_file.name)
+                continue
+            log.info('stack name found: %s', stack_name)
+            for export_name in imported_export_names:
+                stack_import_mapping.setdefault(export_name, []).append(stack_name)
     return stack_import_mapping

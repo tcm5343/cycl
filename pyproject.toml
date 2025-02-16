@@ -1,11 +1,10 @@
-[backend]
+[build-system]
 requires = ['setuptools>=64', 'setuptools-scm>=8']
 build-backend = 'setuptools.build_meta'
 
 [project]
-
 name = 'cycl'
-version='0.1.0'
+version='0.1.14'
 requires-python = '>=3.8'
 description = 'CLI and Python SDK to help identify cross-stack import/export circular dependencies, for a given AWS account and region.'
 readme = 'README.md'
@@ -39,27 +38,26 @@ cycl = 'cycl.cli:app'
 line-length = 125
 
 [tool.ruff.lint]
-# desire is to add COM812 too
 select = ['ALL']
 ignore = [
-    'COM',  # flake8-commas
-    'D',  # pydocstyle
-    'ERA001',  # commented-out-code
-    'FIX002',  # line-contains-todo
-    'Q000',  # bad-quotes-inline-string
-    'Q003',  # avoidable-escaped-quote
-    'T201',  # print
-    'TD',  # flake8-todos
+    'COM',      # flake8-commas
+    'D',        # pydocstyle
+    'ERA001',   # commented-out-code
+    'FIX002',   # line-contains-todo
+    'Q000',     # bad-quotes-inline-string
+    'Q003',     # avoidable-escaped-quote
+    'T201',     # print
+    'TD',       # flake8-todos
 ]
 
 [tool.ruff.lint.per-file-ignores]
 'tests/**' = [
-    'ANN',  # flake8-annotations
+    'ANN',      # flake8-annotations
     'PLR2004',  # magic-value-comparison
-    'S101',  # assert
+    'S101',     # assert
 ]
 '__init__.py' = [
-    'F401',  # unused-import
+    'F401',     # unused-import
 ]
 
 [tool.ruff.format]
@@ -76,8 +74,11 @@ fail_under = 90
 show_missing = true
 skip_covered = true
 skip_empty = true
+exclude_lines = [
+    "if TYPE_CHECKING:",
+]
 omit = [
-    '__*__.py'
+    '__*__.py',
 ]
 
 [tool.pytest.ini_options]

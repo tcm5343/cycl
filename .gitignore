@@ -180,4 +180,4 @@ volume
 aws
 
 # make marker files
-requirements*.hash
+requirements.cache

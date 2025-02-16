@@ -4,21 +4,18 @@ SHELL := /bin/bash
 .PHONY = help clean format test install-deps
 
 REQ_FILES := requirements.txt requirements-dev.txt
-REQ_HASH := requirements.hash
+REQ_CACHE := requirements.cache
 
 help:
 	@egrep -h '\s##\s' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m  %-30s\033[0m %s\n", $$1, $$2}'
 
-# Generate a hash file based on the last modified times of REQ_FILES
-# HANDLE IF ERROR TO CLEAN REQ_HASH
-$(REQ_HASH): $(REQ_FILES)
-	@echo "Checking if dependencies need to be installed..."
-	stat -c %Y $(REQ_FILES) | md5sum | awk '{print $$1}' > $(REQ_HASH)
+$(REQ_CACHE): $(REQ_FILES)
 	@echo "Installing dependencies..."
-	python3 -m venv ./.venv
-	pip install -e . -r requirements-dev.txt
+	pip install --editable . -r requirements-dev.txt
+	touch requirements.cache
 
-install-deps: $(REQ_HASH)  ## Install dependencies if requirements files changed
+install-deps: $(REQ_CACHE)  ## Install dependencies, if needed
+	@echo "Dependencies have been installed..."
 
 format:  ## Format the project
 	ruff format
@@ -27,15 +24,18 @@ format:  ## Format the project
 validate:  ## Validate the project is linted and formatted
 	ruff format --check
 	ruff check
+	mypy ./src/
 
 test:  ## Run unit tests and generate coverage report
 	pytest --cov=./src/ ./tests/
 
 clean:  ## Clean generated project files
-	rm -f $(REQ_HASH)
+	rm -f $(REQ_CACHE)
 	rm -f .coverage
 	rm -rf ./.ruff_cache
 	rm -rf ./.pytest_cache
 	rm -rf ./.venv
 	rm -rf ./.tox
+	rm -rf ./dist
+	rm -rf ./.mypy_cache
 	find . -type d -name "__pycache__" -exec rm -r {} +

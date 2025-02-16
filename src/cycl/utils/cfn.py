@@ -7,7 +7,7 @@ import boto3
 from botocore.exceptions import ClientError
 
 if TYPE_CHECKING:
-    from botocore.client import BaseClient
+    from mypy_boto3_cloudformation import CloudFormationClient
 
 log = getLogger(__name__)
 
@@ -20,7 +20,7 @@ def parse_name_from_id(stack_id: str) -> str:
     return ''
 
 
-def get_all_exports(cfn_client: BaseClient | None = None) -> dict:
+def get_all_exports(cfn_client: CloudFormationClient | None = None) -> dict:
     if cfn_client is None:
         cfn_client = boto3.client('cloudformation')
 
@@ -36,7 +36,7 @@ def get_all_exports(cfn_client: BaseClient | None = None) -> dict:
     return exports
 
 
-def get_all_imports(export_name: str, cfn_client: BaseClient | None = None) -> list[str]:
+def get_all_imports(export_name: str, cfn_client: CloudFormationClient | None = None) -> list[str]:
     if cfn_client is None:
         cfn_client = boto3.client('cloudformation')
 
