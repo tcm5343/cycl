@@ -25,8 +25,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
 
-      - name: Install tox and tox-gh
-        run: pip install tox tox-gh
+      - name: setup tox
+        run: pip install tox
 
       - name: test
         run: |
