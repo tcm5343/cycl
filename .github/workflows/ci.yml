@@ -29,4 +29,6 @@ jobs:
         run: pip install tox tox-gh
 
       - name: test
-        run: tox
+        run: |
+          TOXENV="py$(echo ${{ matrix.python-version }} | sed 's/\.//')"
+          tox -e "${TOXENV}"
