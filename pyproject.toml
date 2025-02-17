@@ -17,7 +17,6 @@ classifiers = [
     'Programming Language :: Python :: 3.11',
     'Programming Language :: Python :: 3.12',
     'Programming Language :: Python :: 3.13',
-    'Programming Language :: Python :: 3.8',
     'Programming Language :: Python :: 3.9',
     'Programming Language :: Python :: 3',
     'Programming Language :: Python',
@@ -84,3 +83,16 @@ omit = [
 [tool.pytest.ini_options]
 log_cli_level = 'INFO'
 addopts = ['--import-mode=importlib']
+
+[tool.tox]
+env_list = ["py39", "py310", "py311", "py312", "py313"]
+skip_missing_interpreters = false
+
+[tool.tox.env_run_base]
+allowlist_externals = ['make']
+package = "editable"
+deps = '-rrequirements-dev.txt'
+commands = [
+    ["make", "validate"],
+    ["make", "test", "ARGS={posargs}"]
+]
