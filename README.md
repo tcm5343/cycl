@@ -6,6 +6,7 @@
 [![Build Status](https://github.com/tcm5343/cycl/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/tcm5343/cycl/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/charliermarsh/ruff/main/assets/badge/v0.json)](https://github.com/charliermarsh/ruff)
+![Checked with mypy](https://img.shields.io/badge/mypy-checked-blue)](http://mypy-lang.org/)
 
 cycl is a CLI and Python SDK to help identify cross-stack import/export circular dependencies, for a given AWS account and region. The successor to [circular-dependency-detector](https://github.com/tcm5343/circular-dependency-detector), which was built at the University of Texas at Austin.
 
