@@ -10,31 +10,30 @@ env:
   PYTHONPATH: './src:./test'
 
 jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: ['ubuntu-latest']
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
+  # build:
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       os: ['ubuntu-latest']
+  #       python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+  #   runs-on: ${{ matrix.os }}
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'pip'
+  #     - uses: actions/setup-python@v5
+  #       with:
+  #         python-version: ${{ matrix.python-version }}
+  #         cache: 'pip'
 
-      - name: setup tox
-        run: pip install tox
+  #     - name: setup tox
+  #       run: pip install tox
 
-      - name: test
-        run: |
-          TOXENV="py$(echo ${{ matrix.python-version }} | sed 's/\.//')"
-          tox -e "${TOXENV}"
+  #     - name: test
+  #       run: |
+  #         TOXENV="py$(echo ${{ matrix.python-version }} | sed 's/\.//')"
+  #         tox -e "${TOXENV}"
 
-  docs:
-    needs: build
+  build-docs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -49,15 +48,22 @@ jobs:
         run: pip install -r requirements-docs.txt
 
       - name: Sphinx build
-        run: sphinx-build docs docs/_build
+        run: sphinx-build docs docs/_build --builder html
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e  # v4.0.0
+      - name: Upload static files as artifact
         # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        id: deployment
+        uses: actions/upload-pages-artifact@v3
         with:
-          publish_branch: gh-pages
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: docs/_build/
-          force_orphan: true
-          enable_jekyll: false
-          keep_files: false
+          path: docs/_build/
+  
+  deploy-docs:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build-docs
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

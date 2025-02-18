@@ -21,6 +21,6 @@ Documentation for using `cycl` is found [here](https://tcm5343.github.io/cycl/).
 To serve the documentation pages locally, you can simply run `docker compose up`. The address should be served on `http://0.0.0.0:8000`, if not, you can run `docker compose logs sphinx | grep "Serving"` to determine the actual address.
 
 To run specific tests:
-`tox -e py39 -- ./tests/utils/cdk_test.py`
 
-`make test ARGS=./tests/utils/cdk_test.py`
+* `tox -e py39 -- ./tests/utils/cdk_test.py`
+* `make test ARGS=./tests/utils/cdk_test.py`
