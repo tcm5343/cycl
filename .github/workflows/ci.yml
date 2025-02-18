@@ -48,7 +48,7 @@ jobs:
         run: pip install -r requirements-docs.txt -e .
 
       - name: Sphinx build
-        run: sphinx-build docs docs/_build --builder html
+        run: sphinx-build docs docs/_build --builder html --fresh-env
 
       - name: Upload static files as artifact
         id: deployment
