@@ -24,7 +24,7 @@ format:  ## Format the project
 validate:  ## Validate the project is linted and formatted
 	ruff format --check
 	ruff check
-	mypy ./src/
+	python3 -m mypy ./src/
 
 test:  ## Run unit tests and generate coverage report
 	pytest --cov=./src/ $(ARGS)

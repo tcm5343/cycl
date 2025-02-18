@@ -1,7 +1,7 @@
 import sys
+
 # import os
 from unittest import mock
-
 
 MOCK_MODULES = ['boto3', 'networkx']
 for mod_name in MOCK_MODULES:
