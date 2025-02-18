@@ -1,7 +1,5 @@
-import argparse
 import json
 import logging
-import pathlib
 import sys
 from logging import getLogger
 

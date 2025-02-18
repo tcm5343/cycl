@@ -15,13 +15,13 @@ release = '0.2.1'
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinxarg.ext'
+    'sphinx.ext.autodoc', 
+    'sphinxarg.ext',
+    "sphinx.ext.githubpages",
 ]
 
 templates_path = ['_templates']
 exclude_patterns = []
-
 
 
 # -- Options for HTML output -------------------------------------------------
