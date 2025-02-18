@@ -24,10 +24,13 @@ format:  ## Format the project
 validate:  ## Validate the project is linted and formatted
 	ruff format --check
 	ruff check
-	mypy ./src/
+	python3 -m mypy ./src/
 
 test:  ## Run unit tests and generate coverage report
 	pytest --cov=./src/ $(ARGS)
+
+docs-serve:  ## Serve a live version of the documentation locally
+	docker compose up sphinx --remove-orphans
 
 clean:  ## Clean generated project files
 	rm -f $(REQ_CACHE)
@@ -38,4 +41,5 @@ clean:  ## Clean generated project files
 	rm -rf ./.tox
 	rm -rf ./dist
 	rm -rf ./.mypy_cache
-	find . -type d -name "__pycache__" -exec rm -r {} +
+	rm -rf ./docs/_build
+	find . -type d -name "__pycache__" -exec rm -rf {} +

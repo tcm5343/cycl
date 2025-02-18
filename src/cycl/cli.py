@@ -13,7 +13,7 @@ from cycl.utils.log_config import configure_log
 log = getLogger(__name__)
 
 
-def app() -> None:
+def create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog='cycl', description='Check for cross-stack import/export circular dependencies.')
     sp = parser.add_subparsers(dest='cmd', required=True)
 
@@ -43,6 +43,11 @@ def app() -> None:
             type=str,
             help='List of nodes to ignore when building the graph (ex. --ignore-nodes s1 s2 ...)',
         )
+    return parser
+
+
+def app() -> None:
+    parser = create_parser()
 
     if len(sys.argv) == 1:
         parser.print_help()
