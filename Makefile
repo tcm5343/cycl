@@ -30,7 +30,7 @@ test:  ## Run unit tests and generate coverage report
 	pytest --cov=./src/ $(ARGS)
 
 docs-serve:  ## Serve live version of the documentation
-	sphinx-autobuild -M html docs docs/_build/html
+	docker compose up sphinx --remove-orphans
 
 clean:  ## Clean generated project files
 	rm -f $(REQ_CACHE)
@@ -41,4 +41,5 @@ clean:  ## Clean generated project files
 	rm -rf ./.tox
 	rm -rf ./dist
 	rm -rf ./.mypy_cache
-	find . -type d -name "__pycache__" -exec rm -r {} +
+	rm -rf ./docs/_build
+	find . -type d -name "__pycache__" -exec rm -rf {} +
