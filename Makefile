@@ -29,6 +29,9 @@ validate:  ## Validate the project is linted and formatted
 test:  ## Run unit tests and generate coverage report
 	pytest --cov=./src/ $(ARGS)
 
+docs-serve:  ## Serve live version of the documentation
+	sphinx-autobuild -M html docs docs/_build/html
+
 clean:  ## Clean generated project files
 	rm -f $(REQ_CACHE)
 	rm -f .coverage

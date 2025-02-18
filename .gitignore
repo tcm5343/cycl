@@ -181,3 +181,6 @@ aws
 
 # make marker files
 requirements.cache
+
+# docs
+docs_dist
