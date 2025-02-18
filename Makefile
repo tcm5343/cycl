@@ -29,7 +29,7 @@ validate:  ## Validate the project is linted and formatted
 test:  ## Run unit tests and generate coverage report
 	pytest --cov=./src/ $(ARGS)
 
-docs-serve:  ## Serve live version of the documentation
+docs-serve:  ## Serve a live version of the documentation locally
 	docker compose up sphinx --remove-orphans
 
 clean:  ## Clean generated project files

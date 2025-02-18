@@ -45,7 +45,7 @@ jobs:
           python-version: 3.11
 
       - name: Install dependencies
-        run: pip install -r requirements-docs.txt -e .
+        run: pip install -e .[docs]
 
       - name: Sphinx build
         run: sphinx-build docs docs/_build --builder html --fresh-env

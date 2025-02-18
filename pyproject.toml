@@ -4,7 +4,7 @@ build-backend = 'setuptools.build_meta'
 
 [project]
 name = 'cycl'
-version='0.2.1'
+version='0.2.2'
 requires-python = '>=3.8'
 description = 'CLI and Python SDK to help identify cross-stack import/export circular dependencies, for a given AWS account and region.'
 readme = 'README.md'
@@ -25,6 +25,15 @@ classifiers = [
 dependencies = [
     'boto3~=1.0',
     'networkx~=3.0',
+]
+
+[project.optional-dependencies]
+docs = [
+    'myst-parser==4.0.1',
+    'sphinx_rtd_theme==3.0.2',
+    'sphinx-argparse==0.5.2',
+    'sphinx-autobuild==2024.10.3',
+    'sphinx==8.1.3',
 ]
 
 [project.urls]

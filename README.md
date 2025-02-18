@@ -18,7 +18,9 @@ Documentation for using `cycl` is found [here](https://tcm5343.github.io/cycl/).
 
 `cycl` is being actively developed, instructions will come as it becomes more stable.
 
-To serve the documentation pages locally, you can simply run `docker compose up`. The address should be served on `http://0.0.0.0:8000`, if not, you can run `docker compose logs sphinx | grep "Serving"` to determine the actual address.
+Run `make` to see the available targets and their descriptions.
+
+To serve the documentation pages locally, you can simply run `make docs-serve`. The address should be served on `http://0.0.0.0:8000`, if not, you can run `docker compose logs sphinx | grep "Serving"` to determine the correct address.
 
 To run specific tests:
 
