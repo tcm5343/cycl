@@ -6,6 +6,7 @@ from unittest.mock import patch
 import pytest
 
 import cycl.utils.cdk as cdk_module
+from cycl.models.stack_data import StackData
 from cycl.utils.cdk import InvalidCdkOutPathError, get_cdk_out_imports
 
 
@@ -63,13 +64,27 @@ def test_get_cdk_out_imports_no_imports(cdk_out_mock, cdk_template_mock):
 
 
 def test_get_cdk_out_imports_has_imports(cdk_out_mock):
-    expected = {'some-export-name-1': ['some-stack-display-name-1']}
+    expected = {
+        'some-export-name-1': [
+            StackData(
+                export_name='some-export-name-1',
+                stack_name='some-stack-display-name-1',
+            ),
+        ],
+    }
     actual = get_cdk_out_imports(cdk_out_mock)
     assert actual == expected
 
 
 def test_get_cdk_out_imports_has_imports_in_list(cdk_out_mock, cdk_template_mock):
-    expected = {'some-export-name-1': ['some-stack-display-name-1']}
+    expected = {
+        'some-export-name-1': [
+            StackData(
+                export_name='some-export-name-1',
+                stack_name='some-stack-display-name-1',
+            ),
+        ],
+    }
     cdk_template_mock['Resources']['MyResource']['Properties']['BucketName'] = [
         {'Fn::ImportValue': 'some-export-name-1'},
     ]
@@ -109,7 +124,14 @@ def test_get_cdk_out_adds_cdk_out_dir_if_not_already_there(cdk_out_mock, cdk_tem
     """
     example is infra/ being passed instead of infra/cdk.out, simply append cdk.out/
     """
-    expected = {'some-export-name-1': ['some-stack-display-name-1']}
+    expected = {
+        'some-export-name-1': [
+            StackData(
+                export_name='some-export-name-1',
+                stack_name='some-stack-display-name-1',
+            ),
+        ],
+    }
 
     cdk_template_mock['Resources']['MyResource']['Properties']['BucketName']['Fn::ImportValue'] = 'some-export-name-2'
     template_path = cdk_out_mock.parent / 'test-stack-2.template.json'
@@ -128,7 +150,20 @@ def test_get_cdk_out_adds_cdk_out_dir_if_not_already_there(cdk_out_mock, cdk_tem
 
 
 def test_get_cdk_out_imports_with_two_stacks(cdk_out_mock, cdk_template_mock, cdk_manifest_mock):
-    expected = {'some-export-name-1': ['some-stack-display-name-1'], 'some-export-name-2': ['some-stack-display-name-2']}
+    expected = {
+        'some-export-name-1': [
+            StackData(
+                export_name='some-export-name-1',
+                stack_name='some-stack-display-name-1',
+            ),
+        ],
+        'some-export-name-2': [
+            StackData(
+                export_name='some-export-name-2',
+                stack_name='some-stack-display-name-2',
+            ),
+        ],
+    }
 
     cdk_template_mock['Resources']['MyResource']['Properties']['BucketName']['Fn::ImportValue'] = 'some-export-name-2'
     template_path = cdk_out_mock / 'test-stack-2.template.json'
@@ -156,7 +191,14 @@ def test_get_cdk_out_imports_with_two_stacks(cdk_out_mock, cdk_template_mock, cd
 def test_get_cdk_out_imports_skips_when_unable_to_resolve_stack_name(
     cdk_out_mock, cdk_template_mock, cdk_manifest_mock, manifest_body
 ):
-    expected = {'some-export-name-1': ['some-stack-display-name-1']}
+    expected = {
+        'some-export-name-1': [
+            StackData(
+                export_name='some-export-name-1',
+                stack_name='some-stack-display-name-1',
+            ),
+        ],
+    }
 
     cdk_template_mock['Resources']['MyResource']['Properties']['BucketName']['Fn::ImportValue'] = 'some-export-name-2'
     template_path = cdk_out_mock / 'test-stack-2.template.json'
@@ -173,8 +215,20 @@ def test_get_cdk_out_imports_skips_when_unable_to_resolve_stack_name(
 
 
 def test_get_cdk_out_imports_with_stages(cdk_out_mock, cdk_template_mock, cdk_manifest_mock):
-    expected = {'some-export-name-1': ['some-stack-display-name-1'], 'some-export-name-2': ['some-stack-display-name-2']}
-
+    expected = {
+        'some-export-name-1': [
+            StackData(
+                export_name='some-export-name-1',
+                stack_name='some-stack-display-name-1',
+            ),
+        ],
+        'some-export-name-2': [
+            StackData(
+                export_name='some-export-name-2',
+                stack_name='some-stack-display-name-2',
+            ),
+        ],
+    }
     cdk_template_mock['Resources']['MyResource']['Properties']['BucketName']['Fn::ImportValue'] = 'some-export-name-2'
     stage_path = cdk_out_mock / 'some-stage-1'
     stage_path.mkdir()
@@ -194,8 +248,14 @@ def test_get_cdk_out_imports_with_stages(cdk_out_mock, cdk_template_mock, cdk_ma
 
 
 def test_get_cdk_out_imports_grabs_stack_name_first(cdk_out_mock, cdk_manifest_mock):
-    expected = {'some-export-name-1': ['some-stack-name-1']}
-
+    expected = {
+        'some-export-name-1': [
+            StackData(
+                export_name='some-export-name-1',
+                stack_name='some-stack-name-1',
+            ),
+        ],
+    }
     cdk_manifest_mock['artifacts']['test-stack-1']['properties'] = {
         'stackName': 'some-stack-name-1',
     }

@@ -4,6 +4,8 @@ import json
 from logging import getLogger
 from pathlib import Path
 
+from cycl.models.stack_data import StackData
+
 log = getLogger(__name__)
 
 
@@ -72,7 +74,7 @@ def __validate_cdk_out_path(cdk_out_path: Path) -> Path:
     return cdk_out_path
 
 
-def get_cdk_out_imports(cdk_out_path: Path) -> dict[str, list[str]]:
+def get_cdk_out_imports(cdk_out_path: Path) -> dict[str, list[StackData]]:
     """
     map an export name to a list of stacks which import it
 
@@ -83,7 +85,7 @@ def get_cdk_out_imports(cdk_out_path: Path) -> dict[str, list[str]]:
     """
     cdk_out_path = __validate_cdk_out_path(cdk_out_path)
 
-    stack_import_mapping: dict[str, list[str]] = {}
+    stack_import_mapping: dict[str, list[StackData]] = {}
     for template_file in cdk_out_path.rglob('*.template.json'):
         log.info('Processing template: %s', template_file)
         imported_export_names = __get_import_values_from_template(template_file)
@@ -98,5 +100,10 @@ def get_cdk_out_imports(cdk_out_path: Path) -> dict[str, list[str]]:
                 continue
             log.info('stack name found: %s', stack_name)
             for export_name in imported_export_names:
-                stack_import_mapping.setdefault(export_name, []).append(stack_name)
+                stack_import_mapping.setdefault(export_name, []).append(
+                    StackData(
+                        stack_name=stack_name,
+                        export_name=export_name,
+                    )
+                )
     return stack_import_mapping
