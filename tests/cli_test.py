@@ -31,7 +31,7 @@ def test_app_no_cmd_displays_help(capsys):
     assert err.value.code == 0
     console_output = capsys.readouterr().out
     assert 'usage: cycl [-h] {check,topo}' in console_output
-    assert 'Check for cross-stack import/export circular dependencies.' in console_output
+    assert 'Check circular dependencies between imports and exports.' in console_output
 
 
 def test_app_unsupported_action(capsys):

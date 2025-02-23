@@ -11,7 +11,7 @@ for mod_name in MOCK_MODULES:
 project = 'cycl'
 copyright = '2025, tcm5343'
 author = 'tcm5343'
-release = '0.2.1'
+release = '0.2.2'
 
 extensions = [
     'sphinx_rtd_theme',

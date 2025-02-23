@@ -45,7 +45,7 @@ jobs:
           python-version: 3.11
 
       - name: Install dependencies
-        run: pip install -e .[docs]
+        run: pip install -e .[doc]
 
       - name: Sphinx build
         run: sphinx-build docs docs/_build --builder html --fresh-env
@@ -56,7 +56,7 @@ jobs:
         with:
           path: docs/_build/
   
-  deploy-docs:          
+  deploy-doc:          
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     needs: build-docs
     runs-on: ubuntu-latest

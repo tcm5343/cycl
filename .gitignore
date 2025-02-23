@@ -135,6 +135,8 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.dev_venv
+.doc_venv
 
 # Spyder project settings
 .spyderproject
@@ -184,3 +186,6 @@ requirements.cache
 
 # docs
 docs_dist
+
+# pyenv
+.python-version

@@ -12,7 +12,7 @@ cycl is a CLI and Python SDK to help identify cross-stack import/export circular
 
 ## Documentation
 
-Documentation for using `cycl` is found [here](https://tcm5343.github.io/cycl/).
+Documentation for using `cycl` may be found [here](https://tcm5343.github.io/cycl/).
 
 ## Contributing
 
@@ -20,9 +20,7 @@ Documentation for using `cycl` is found [here](https://tcm5343.github.io/cycl/).
 
 Run `make` to see the available targets and their descriptions.
 
-To serve the documentation pages locally, you can simply run `make docs-serve`. The address should be served on `http://0.0.0.0:8000`, if not, you can run `docker compose logs sphinx | grep "Serving"` to determine the correct address.
-
 To run specific tests:
 
-* `tox -e py39 -- ./tests/utils/cdk_test.py`
-* `make test ARGS=./tests/utils/cdk_test.py`
+* using tox: `tox -e py39 -- ./tests/utils/cdk_test.py`
+* using pytest directly: `make test ARGS=./tests/utils/cdk_test.py`

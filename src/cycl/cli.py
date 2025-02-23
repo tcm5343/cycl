@@ -14,34 +14,47 @@ log = getLogger(__name__)
 
 
 def create_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog='cycl', description='Check for cross-stack import/export circular dependencies.')
+    parser = argparse.ArgumentParser(prog='cycl', description='Check circular dependencies between imports and exports.')
     sp = parser.add_subparsers(dest='cmd', required=True)
 
-    check_p = sp.add_parser('check', help='Check for cycles between stacks in AWS stack imports/exports')
-    check_p.add_argument('--exit-zero', action='store_true', help='Exit 0 regardless of result of cycle check')
+    check_p = sp.add_parser('check', help='Check for cycles between AWS stack imports and exports.')
+    check_p.add_argument('--exit-zero', action='store_true', help='Exit zero regardless of cyclic chekc result.')
 
-    topo_p = sp.add_parser('topo', help='Find topological generations if dependencies are acyclic')
+    topo_p = sp.add_parser('topo', help='Find topological generations, if dependencies are acyclic')
 
     # global options
     for p in [check_p, topo_p]:
         p.add_argument(
             '--log-level',
             choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
-            default='WARNING',
-            help='Set the logging level (default: WARNING)',
+            default='INFO',
+            help='Sets the logging level.',
         )
         p.add_argument(
             '--cdk-out',
             type=pathlib.Path,
-            help='Path to cdk.out, where stacks are CDK synthesized to CFN templates',
+            help='EXPERIMENTAL : Path to cdk.out/, where the cdk synthesizes the cloud assembly output.',
         )
         p.add_argument(
-            '-in',
             '--ignore-nodes',
             nargs='+',
             default=[],
             type=str,
-            help='List of nodes to ignore when building the graph (ex. --ignore-nodes s1 s2 ...)',
+            help=(
+                "List of nodes to to ignore when building the graph. Don't repeat ``--ignore-nodes`` if you "
+                'have multiple nodes (ex. ``--ignore-nodes v1 v2``).'
+            ),
+        )
+        p.add_argument(
+            '--ignore-edge',
+            nargs=2,
+            default=[],
+            action='append',
+            metavar=('u', 'v'),
+            help=(
+                'Specify an edge to ignore by providing two nodes delimited by a space. ``--ignore-edge u v`` must be '
+                'repeated for each edge provided.'
+            ),
         )
     return parser
 
@@ -55,6 +68,10 @@ def app() -> None:
 
     args = parser.parse_args()
     configure_log(getattr(logging, args.log_level))
+
+    # if args.ignore_edge:
+    #     for edge in args.ignore_edge:
+    #         print(f"Ignoring edge from {edge[0]} to {edge[1]}")
 
     dep_graph = build_dependency_graph(cdk_out_path=args.cdk_out, nodes_to_ignore=args.ignore_nodes)
     cycles = list(nx.simple_cycles(dep_graph))
