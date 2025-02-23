@@ -33,7 +33,7 @@ def create_parser() -> argparse.ArgumentParser:
         p.add_argument(
             '--cdk-out',
             type=pathlib.Path,
-            help='Path to cdk.out/, where the cdk synthesizes the cloud assembly output.',
+            help='EXPERIMENTAL : Path to cdk.out/, where the cdk synthesizes the cloud assembly output.',
         )
         p.add_argument(
             '--ignore-nodes',

@@ -115,7 +115,7 @@ skip_missing_interpreters = false
 [tool.tox.env_run_base]
 allowlist_externals = ['make']
 package = "editable"
-deps = ["dev"]
+deps = [".[dev]"]
 commands = [
     ["make", "validate"],
     ["make", "test", "ARGS={posargs}"]
