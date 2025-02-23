@@ -1,23 +1,14 @@
-# cycl documentation
+# cycl
 
-## Getting started
+Over the lifetime of a project, circular dependencies may be introduced accidentally. While AWS detects circular dependencies within a stack, cross stack circular dependencies can slip by undetected until the infrastructure needs to change.
 
-It is recommended to use `pipx` to install `cycl` but you can also use `pip` by simply running `pip install cycl`.
-
-## How to use cycl?
-
-There are two main use cases for `cycl`.
-
-1. In a pipeline. `cycl` is best used to detect circular dependencies before a deployment. If you're using the AWS CDK v2 (v1 support coming soon), simply synthesize you templates to a directory and pass that directory to `cycl` using `--cdk-out-path some-path-here`. This allows `cycl` to find all existing cycles and then those to be introduced by the deployment. This prevents the circular dependency from ever being introduced. If your pipeline deploys more than once, you should execute `cycl` before each deployment.
-2. To perform analysis. While a CLI is best used in a pipeline, if you require analysis which is not currently supported, you can use the SDK. The SDK gives you all the information that `cycl` collects.
-
-## Why use cycl?
-
-Over the lifetime of a project, circular references are bound to be introduced. They may not be noticed until you need to re-deploy some infrastructure. A good example is disaster recovery testing and potentially deploying all your infrastructure from scratch in a new region. This tool detects those changes.
+An example is disaster recovery testing and potentially needing to deploy all your infrastructure from scratch in a new region. `cycl` detects those cross stack circular dependencies when they are introduced.
 
 ```{toctree}
 :maxdepth: 2
-:caption: CLI:
+:caption: Content:
 
-cmd
+guide/quickstart
+tutorial/how
+reference/reference
 ```

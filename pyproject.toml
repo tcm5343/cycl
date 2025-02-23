@@ -5,7 +5,7 @@ build-backend = 'setuptools.build_meta'
 [project]
 name = 'cycl'
 version='0.2.2'
-requires-python = '>=3.8'
+requires-python = '>=3.9'
 description = 'CLI and Python SDK to help identify cross-stack import/export circular dependencies, for a given AWS account and region.'
 readme = 'README.md'
 keywords = ['aws', 'cdk', 'cycle', 'circular', 'dependency', 'infrastructure', 'boto3', 'cloud']
@@ -28,7 +28,17 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-docs = [
+dev = [
+    'boto3-stubs[essential]==1.36.21',
+    'mypy==1.15.0',
+    'pytest-cov==6.0.0',
+    'pytest-subtests==0.14.1',
+    'pytest-sugar==1.0.0',
+    'pytest==8.3.4',
+    'ruff==0.9.4',
+    'types-networkx==3.4.2.20241227',
+]
+doc = [
     'myst-parser==4.0.1',
     'sphinx_rtd_theme==3.0.2',
     'sphinx-argparse==0.5.2',
@@ -105,7 +115,7 @@ skip_missing_interpreters = false
 [tool.tox.env_run_base]
 allowlist_externals = ['make']
 package = "editable"
-deps = '-rrequirements-dev.txt'
+deps = ["dev"]
 commands = [
     ["make", "validate"],
     ["make", "test", "ARGS={posargs}"]

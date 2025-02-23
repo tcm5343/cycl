@@ -1,45 +1,76 @@
 SHELL := /bin/bash
 .SHELLFLAGS = -ec
 .DEFAULT_GOAL = help
-.PHONY = help clean format test install-deps
+.PHONY = help clean format test install-deps venv
 
-REQ_FILES := requirements.txt requirements-dev.txt
-REQ_CACHE := requirements.cache
+DEV_VENV := .dev_venv
+DEV_DEPS_CACHE := $(DEV_VENV)/dev-deps.cache
+
+DOC_VENV := .doc_venv
+DOC_DEPS_CACHE := $(DOC_VENV)/doc-deps.cache
 
 help:
 	@egrep -h '\s##\s' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m  %-30s\033[0m %s\n", $$1, $$2}'
 
-$(REQ_CACHE): $(REQ_FILES)
-	@echo "Installing dependencies..."
-	pip install --editable . -r requirements-dev.txt
-	touch requirements.cache
+$(DEV_DEPS_CACHE): pyproject.toml
+	@echo "Installing development dependencies..."
+	@test -d .venv || python3 -m venv $(DEV_VENV)
+	@( \
+		source ./$(DEV_VENV)/bin/activate; \
+		pip install --editable .[dev]; \
+		touch $(DEV_DEPS_CACHE); \
+	)
 
-install-deps: $(REQ_CACHE)  ## Install dependencies, if needed
-	@echo "Dependencies have been installed..."
+install-dev-deps: $(DEV_DEPS_CACHE)  ## Install development dependencies
+	@echo "Development deps have been installed..."
 
-format:  ## Format the project
-	ruff format
-	ruff check --fix
+$(DOC_DEPS_CACHE): pyproject.toml
+	@echo "Installing documenation dependencies..."
+	@test -d .venv || python3 -m venv $(DOC_VENV)
+	@( \
+		source ./$(DOC_VENV)/bin/activate; \
+		pip install --editable .[doc]; \
+		touch $(DOC_DEPS_CACHE); \
+	)
 
-validate:  ## Validate the project is linted and formatted
-	ruff format --check
-	ruff check
-	python3 -m mypy ./src/
+install-doc-deps: $(DOC_DEPS_CACHE)  ## Install documentation dependencies
+	@echo "Documentation deps have been installed..."
 
-test:  ## Run unit tests and generate coverage report
-	pytest --cov=./src/ $(ARGS)
+format: install-dev-deps  ## Format the project
+	@( \
+		source ./$(DEV_VENV)/bin/activate; \
+		ruff format; \
+		ruff check --fix; \
+	)
 
-docs-serve:  ## Serve a live version of the documentation locally
-	docker compose up sphinx --remove-orphans
+validate: install-dev-deps  ## Validate the projects formatting
+	@( \
+		source ./$(DEV_VENV)/bin/activate; \
+		ruff format --check; \
+		ruff check; \
+		python3 -m mypy ./src/; \
+	)
+
+test: install-dev-deps  ## Run unit tests
+	@( \
+		source ./$(DEV_VENV)/bin/activate; \
+		pytest --cov=./src/ $(ARGS); \
+	)
+	
+doc-serve: install-doc-deps ## Serve the documentation locally
+	@( \
+		source ./$(DOC_VENV)/bin/activate; \
+		sphinx-autobuild -M html docs docs/_build; \
+	)
 
 clean:  ## Clean generated project files
-	rm -f $(REQ_CACHE)
-	rm -f .coverage
-	rm -rf ./.ruff_cache
-	rm -rf ./.pytest_cache
-	rm -rf ./.venv
-	rm -rf ./.tox
-	rm -rf ./dist
-	rm -rf ./.mypy_cache
-	rm -rf ./docs/_build
-	find . -type d -name "__pycache__" -exec rm -rf {} +
+	@rm -f .coverage
+	@rm -rf ./.ruff_cache
+	@rm -rf ./.pytest_cache
+	@rm -rf ./$(DEV_VENV)
+	@rm -rf ./$(DOC_VENV)
+	@rm -rf ./.tox
+	@rm -rf ./dist
+	@rm -rf ./.mypy_cache
+	@rm -rf ./docs/_build
+	@find . -type d -name "__pycache__" -exec rm -rf {} +
