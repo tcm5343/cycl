@@ -50,7 +50,7 @@ def get_dependency_graph_data(cdk_out_path: Path | None = None) -> dict:
 def build_dependency_graph(
     cdk_out_path: Path | None = None,
     nodes_to_ignore: list[str] | None = None,
-    edges_to_ignore: list[list[str, str]] | None = None,
+    edges_to_ignore: list[list[str]] | None = None,
 ) -> nx.MultiDiGraph:
     nodes_to_ignore = nodes_to_ignore or []
     edges_to_ignore = edges_to_ignore or []

@@ -13,7 +13,7 @@ class StackData:
         tags: str | None = None,
         outputs: list[str] | None = None,
         importing_stacks: list[StackData] | None = None,
-    ) -> StackData:
+    ) -> None:
         self.stack_name = stack_name
         self.stack_id = stack_id
         self.name = name
