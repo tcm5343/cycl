@@ -47,8 +47,14 @@ def get_dependency_graph_data(cdk_out_path: Path | None = None) -> dict:
     return exports
 
 
-def build_dependency_graph(cdk_out_path: Path | None = None, nodes_to_ignore: list[str] | None = None) -> nx.MultiDiGraph:
+def build_dependency_graph(
+    cdk_out_path: Path | None = None,
+    nodes_to_ignore: list[str] | None = None,
+    edges_to_ignore: list[list[str, str]] | None = None,
+) -> nx.MultiDiGraph:
+    # [['u', 'v'], ['a', 'b']]
     nodes_to_ignore = nodes_to_ignore or []
+    edges_to_ignore = edges_to_ignore or []
     dep_graph: nx.MultiDiGraph = nx.MultiDiGraph()
     graph_data = get_dependency_graph_data(cdk_out_path)
 
@@ -56,9 +62,14 @@ def build_dependency_graph(cdk_out_path: Path | None = None, nodes_to_ignore: li
     for export in graph_data.values():
         if export['ExportingStackName'] in nodes_to_ignore:
             continue
-        edges = [
-            (export['ExportingStackName'], importing_stack_name) for importing_stack_name in export['ImportingStackNames']
-        ]
+
+        edges = []
+        for importing_stack_name in export['ImportingStackNames']:
+            if importing_stack_name not in nodes_to_ignore:
+                edge = (export['ExportingStackName'], importing_stack_name)
+                if list(edge) not in edges_to_ignore: 
+                    edges.append(edge)
+        
         if edges:
             dep_graph.add_edges_from(ebunch_to_add=edges)
         else:

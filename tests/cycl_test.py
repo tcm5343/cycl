@@ -60,14 +60,6 @@ def test_build_dependency_graph_returns_empty_graph():
 def test_build_dependency_graph_returns_graph(
     mock_get_all_exports, mock_get_all_imports, subtests, mock_get_cdk_out_imports
 ):
-    """
-    Visual representation of expected output graph:
-    some-exporting-stack-id-1-stack-name
-        │
-        ├──► some-importing-stack-name-1
-        │
-        ├──► some-importing-stack-name-2
-    """
     mock_get_all_exports.return_value = {
         'some-name-1': {
             'ExportingStackId': 'some-exporting-stack-id-1',
@@ -107,22 +99,6 @@ def test_build_dependency_graph_returns_graph(
 
 
 def test_build_dependency_graph_returns_graph_with_multiple_exports(mock_get_all_exports, mock_get_all_imports, subtests):
-    """
-    Visual representation of expected output graph:
-    some-exporting-stack-id-1-stack-name
-        │
-        ├──► some-importing-stack-name-1
-        │
-        ├──► some-importing-stack-name-2
-
-    some-exporting-stack-id-2-stack-name
-            │
-            ├──► some-importing-stack-name-1
-
-    some-exporting-stack-id-3-stack-name  (No outgoing edges)
-    some-importing-stack-name-1  (No outgoing edges)
-    some-importing-stack-name-2  (No outgoing edges)
-    """
     mock_get_all_exports.return_value = {
         'some-name-1': {
             'ExportingStackId': 'some-exporting-stack-id-1',
@@ -180,10 +156,6 @@ def test_build_dependency_graph_returns_graph_with_multiple_exports(mock_get_all
 def test_build_dependency_graph_returns_graph_when_export_has_no_imports(
     mock_get_all_exports, mock_get_all_imports, subtests
 ):
-    """
-    Visual representation of expected output graph:
-    some-exporting-stack-id-1-stack-name  (No outgoing edges)
-    """
     mock_get_all_exports.return_value = {
         'some-name-1': {
             'ExportingStackId': 'some-exporting-stack-id-1',
@@ -223,16 +195,6 @@ def test_build_dependency_graph_returns_empty_graph_with_cdk_out_path(mock_get_c
 def test_build_dependency_graph_returns_graph_with_cdk_out_path(
     mock_get_all_exports, mock_get_all_imports, subtests, mock_get_cdk_out_imports
 ):
-    """
-    Visual representation of expected output graph:
-    some-exporting-stack-id-1-stack-name
-        │
-        ├──► some-importing-stack-name-1
-        │
-        ├──► some-importing-stack-name-2
-        │
-        ├──► some-cdk-out-stack-name-1
-    """
     mock_get_cdk_out_imports.return_value = {'some-name-1': ['some-cdk-out-stack-name-1']}
     mock_get_all_exports.return_value = {
         'some-name-1': {
@@ -320,14 +282,6 @@ def test_config_defined_as_expected(mock_config, mock_boto3):
 def test_build_dependency_graph_returns_cyclic_graph(
     mock_get_all_exports, mock_get_all_imports, subtests, mock_get_cdk_out_imports
 ):
-    """
-    Visual representation of expected output graph:
-    some-exporting-stack-id-1-stack-name
-        │
-        ├──► some-importing-stack-name-1
-        │
-        ├──► some-importing-stack-name-2
-    """
     mock_get_all_exports.return_value = {
         'some-name-1': {
             'ExportingStackId': 'some-exporting-stack-id-1',
@@ -389,14 +343,6 @@ def test_build_dependency_graph_returns_cyclic_graph(
 def test_build_dependency_graph_make_cyclic_graph_acyclic_with_ignore_nodes(
     mock_get_all_exports, mock_get_all_imports, subtests, mock_get_cdk_out_imports
 ):
-    """
-    Visual representation of expected output graph:
-    some-exporting-stack-id-1-stack-name
-        │
-        ├──► some-importing-stack-name-1
-        │
-        ├──► some-importing-stack-name-2
-    """
     mock_get_all_exports.return_value = {
         'some-name-1': {
             'ExportingStackId': 'some-exporting-stack-id-1',
@@ -422,13 +368,118 @@ def test_build_dependency_graph_make_cyclic_graph_acyclic_with_ignore_nodes(
         return []  # handles export with no import
 
     mock_get_all_imports.side_effect = mock_get_all_imports_side_effect_func
-    expected_edges = [('some-exporting-stack-id-1-stack-name', 'some-exporting-stack-id-2-stack-name')]
+    expected_edges = []
+    expected_nodes = ['some-exporting-stack-id-1-stack-name']
+
+    actual_graph = build_dependency_graph(nodes_to_ignore=['some-exporting-stack-id-2-stack-name'])
+
+    mock_get_cdk_out_imports.assert_not_called()
+    for expected_node in expected_nodes:
+        with subtests.test(msg='assert graph has node', expected_node=expected_node):
+            assert actual_graph.has_node(expected_node)
+    assert nx.number_of_nodes(actual_graph) == len(expected_nodes)
+
+    for expected_edge in expected_edges:
+        with subtests.test(msg='assert graph has edge', expected_edge=expected_edge):
+            assert actual_graph.has_edge(*expected_edge)
+    assert nx.number_of_edges(actual_graph) == len(expected_edges)
+
+    assert nx.is_directed_acyclic_graph(actual_graph)
+    assert list(nx.simple_cycles(actual_graph)) == []
+
+
+def test_build_dependency_graph_make_cyclic_graph_acyclic_with_ignore_nodes_importing(
+    mock_get_all_exports, mock_get_all_imports, subtests, mock_get_cdk_out_imports
+):
+    mock_get_all_exports.return_value = {
+        'some-name-1': {
+            'ExportingStackId': 'some-exporting-stack-id-1',
+            'Name': 'some-name-1',
+            'Value': 'some-value-1',
+        },
+        'some-name-2': {
+            'ExportingStackId': 'some-exporting-stack-id-2',
+            'Name': 'some-name-2',
+            'Value': 'some-value-2',
+        },
+    }
+
+    def mock_get_all_imports_side_effect_func(export_name, *_args, **_kwargs):
+        if export_name == 'some-name-1':
+            return [
+                'some-exporting-stack-id-2-stack-name',
+                'some-exporting-stack-id-3-stack-name',
+            ]
+        if export_name == 'some-name-2':
+            return [
+                'some-exporting-stack-id-1-stack-name',
+            ]
+        return []  # handles export with no import
+
+    mock_get_all_imports.side_effect = mock_get_all_imports_side_effect_func
+    expected_edges = [
+        ['some-exporting-stack-id-1-stack-name', 'some-exporting-stack-id-3-stack-name'],
+    ]
+    expected_nodes = ['some-exporting-stack-id-1-stack-name', 'some-exporting-stack-id-3-stack-name']
+
+    actual_graph = build_dependency_graph(nodes_to_ignore=['some-exporting-stack-id-2-stack-name'])
+
+    mock_get_cdk_out_imports.assert_not_called()
+    for expected_node in expected_nodes:
+        with subtests.test(msg='assert graph has node', expected_node=expected_node):
+            assert actual_graph.has_node(expected_node)
+    assert nx.number_of_nodes(actual_graph) == len(expected_nodes)
+
+    for expected_edge in expected_edges:
+        with subtests.test(msg='assert graph has edge', expected_edge=expected_edge):
+            assert actual_graph.has_edge(*expected_edge)
+    assert nx.number_of_edges(actual_graph) == len(expected_edges)
+
+    assert nx.is_directed_acyclic_graph(actual_graph)
+    assert list(nx.simple_cycles(actual_graph)) == []
+
+
+def test_build_dependency_graph_make_cyclic_graph_acyclic_with_ignore_edges(
+    mock_get_all_exports, mock_get_all_imports, subtests, mock_get_cdk_out_imports
+):
+    mock_get_all_exports.return_value = {
+        'some-name-1': {
+            'ExportingStackId': 'some-exporting-stack-id-1',
+            'Name': 'some-name-1',
+            'Value': 'some-value-1',
+        },
+        'some-name-2': {
+            'ExportingStackId': 'some-exporting-stack-id-2',
+            'Name': 'some-name-2',
+            'Value': 'some-value-2',
+        },
+    }
+
+    def mock_get_all_imports_side_effect_func(export_name, *_args, **_kwargs):
+        if export_name == 'some-name-1':
+            return [
+                'some-exporting-stack-id-2-stack-name',
+            ]
+        if export_name == 'some-name-2':
+            return [
+                'some-exporting-stack-id-1-stack-name',
+            ]
+        return []  # handles export with no import
+
+    mock_get_all_imports.side_effect = mock_get_all_imports_side_effect_func
+    expected_edges = [
+        ['some-exporting-stack-id-1-stack-name', 'some-exporting-stack-id-2-stack-name'],
+    ]
     expected_nodes = [
         'some-exporting-stack-id-1-stack-name',
         'some-exporting-stack-id-2-stack-name',
     ]
 
-    actual_graph = build_dependency_graph(nodes_to_ignore=['some-exporting-stack-id-2-stack-name'])
+    actual_graph = build_dependency_graph(
+        edges_to_ignore=[
+            ['some-exporting-stack-id-2-stack-name', 'some-exporting-stack-id-1-stack-name'],
+        ]
+    )
 
     mock_get_cdk_out_imports.assert_not_called()
     for expected_node in expected_nodes:

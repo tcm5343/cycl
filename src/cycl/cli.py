@@ -69,11 +69,12 @@ def app() -> None:
     args = parser.parse_args()
     configure_log(getattr(logging, args.log_level))
 
-    # if args.ignore_edge:
-    #     for edge in args.ignore_edge:
-    #         print(f"Ignoring edge from {edge[0]} to {edge[1]}")
+    dep_graph = build_dependency_graph(
+        cdk_out_path=args.cdk_out, 
+        nodes_to_ignore=args.ignore_nodes,
+        edges_to_ignore=args.ignore_edge,
+    )
 
-    dep_graph = build_dependency_graph(cdk_out_path=args.cdk_out, nodes_to_ignore=args.ignore_nodes)
     cycles = list(nx.simple_cycles(dep_graph))
     for cycle in cycles:
         print(f'cycle found between nodes: {cycle}')
