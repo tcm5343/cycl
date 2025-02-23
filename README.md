@@ -16,9 +16,7 @@ Documentation for using `cycl` may be found [here](https://tcm5343.github.io/cyc
 
 ## Contributing
 
-`cycl` is being actively developed, instructions will come as it becomes more stable.
-
-Run `make` to see the available targets and their descriptions.
+`cycl` is being actively developed, instructions will come as it becomes more stable. Run `make` to see the available targets and their descriptions. To run tests using `tox`, you must install `tox` and `pyenv`. A VScode dev container is coming soon.
 
 To run specific tests:
 
