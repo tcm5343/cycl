@@ -67,9 +67,9 @@ def build_dependency_graph(
         for importing_stack_name in export['ImportingStackNames']:
             if importing_stack_name not in nodes_to_ignore:
                 edge = (export['ExportingStackName'], importing_stack_name)
-                if list(edge) not in edges_to_ignore: 
+                if list(edge) not in edges_to_ignore:
                     edges.append(edge)
-        
+
         if edges:
             dep_graph.add_edges_from(ebunch_to_add=edges)
         else:

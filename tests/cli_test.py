@@ -173,7 +173,7 @@ def test_app_topo_acyclic_ignore_passes_arg(mock_build_dependency_graph, cmd):
         app()
 
     mock_build_dependency_graph.assert_called_once_with(
-        cdk_out_path=None, 
+        cdk_out_path=None,
         nodes_to_ignore=['3'],
         edges_to_ignore=[],
     )

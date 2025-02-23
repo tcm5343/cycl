@@ -70,7 +70,7 @@ def app() -> None:
     configure_log(getattr(logging, args.log_level))
 
     dep_graph = build_dependency_graph(
-        cdk_out_path=args.cdk_out, 
+        cdk_out_path=args.cdk_out,
         nodes_to_ignore=args.ignore_nodes,
         edges_to_ignore=args.ignore_edge,
     )
