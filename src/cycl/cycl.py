@@ -52,7 +52,6 @@ def build_dependency_graph(
     nodes_to_ignore: list[str] | None = None,
     edges_to_ignore: list[list[str, str]] | None = None,
 ) -> nx.MultiDiGraph:
-    # [['u', 'v'], ['a', 'b']]
     nodes_to_ignore = nodes_to_ignore or []
     edges_to_ignore = edges_to_ignore or []
     dep_graph: nx.MultiDiGraph = nx.MultiDiGraph()
