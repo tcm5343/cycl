@@ -54,6 +54,7 @@ validate: install-dev-deps  ## Validate the projects formatting
 test: install-dev-deps  ## Run unit tests
 	@( \
 		source ./$(DEV_VENV)/bin/activate; \
+		export PYTHONPATH=./src/; \
 		pytest --cov=./src/ $(ARGS); \
 	)
 	

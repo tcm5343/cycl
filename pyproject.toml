@@ -60,7 +60,14 @@ line-length = 125
 select = ['ALL']
 ignore = [
     'COM',      # flake8-commas
-    'D',        # pydocstyle
+    'D100',
+    'D101',
+    'D102',
+    'D103',
+    'D104',
+    'D105',
+    'D106',
+    'D107',
     'ERA001',   # commented-out-code
     'FIX002',   # line-contains-todo
     'Q000',     # bad-quotes-inline-string
@@ -87,6 +94,9 @@ ignore = [
 quote-style = 'single'
 indent-style = 'space'
 docstring-code-format = true
+
+[tool.ruff.lint.pydocstyle]
+convention = 'google'
 
 [tool.coverage.run]
 branch = true
