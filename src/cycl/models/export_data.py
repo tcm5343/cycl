@@ -38,7 +38,7 @@ class ExportData:
 
     @classmethod
     def from_list_exports(cls, list_exports_resp: ListExportsOutputTypeDef) -> dict[str, ExportData]:
-        """Convert an AWS CloudFormation list exports response into a dictionary of export name to StackData instances.
+        """Convert an AWS CloudFormation list exports response into a dictionary of export name to ExportData instances.
 
         Args:
             list_exports_resp: A dictionary representing the list exports response,
@@ -48,8 +48,8 @@ class ExportData:
                 - 'Value': The exported value.
 
         Returns:
-            A dictionary mapping export names to StackData instances,
-            where each StackData object contains information about the corresponding export.
+            A dictionary mapping export names to ExportData instances,
+            where each ExportData object contains information about the corresponding export.
         """
         return {
             export['Name']: cls(
@@ -63,15 +63,15 @@ class ExportData:
 
     @classmethod
     def get_all_exports(cls, cfn_client: CloudFormationClient | None = None) -> dict[str, ExportData]:
-        """Retrieve all AWS CloudFormation exports and return them as a dictionary of export name to StackData instances.
+        """Retrieve all AWS CloudFormation exports and return them as a dictionary of export name to ExportData instances.
 
         Args:
             cfn_client: A Boto3 CloudFormation client instance.
                 If not provided, a new client will be created.
 
         Returns:
-            A dictionary mapping export names to StackData instances,
-            where each StackData object contains details about the corresponding export.
+            A dictionary mapping export names to ExportData instances,
+            where each ExportData object contains details about the corresponding export.
 
         Note:
             This function paginates through the AWS CloudFormation `list_exports` API to retrieve all exports.
@@ -98,7 +98,7 @@ class ExportData:
         return hash(tuple((key, tuple(value) if isinstance(value, list) else value) for key, value in vars(self).items()))
 
     def __repr__(self) -> str:
-        return f'StackData(stack_name={self.stack_name!r}, export_name={self.export_name!r})'
+        return f'ExportData(stack_name={self.stack_name!r}, export_name={self.export_name!r})'
 
     def get_all_imports(self, cfn_client: CloudFormationClient | None = None) -> ExportData:
         """Retrieve all stacks that import the current export and update the importing_stacks attribute.

@@ -13,7 +13,7 @@ from cycl.utils.log_config import configure_log
 log = getLogger(__name__)
 
 
-# def get_node_key_function(node_key: str, missing_tag: str = 'ignore') -> Callable[[StackData], str]:
+# def get_node_key_function(node_key: str, missing_tag: str = 'ignore') -> Callable[[ExportData], str]:
 #     if node_key.startswith("tag:"):
 #         tag_name = node_key.split(":", 1)[1]
 
@@ -80,7 +80,7 @@ def create_parser() -> argparse.ArgumentParser:
         #     type=str,
         #     choices=['stack_name', 'export_name', 'parent_id', 'tag:Environment'],
         #     default='stack_name',
-        #     help='Specify which StackData attribute to use as the graph node identifier.'
+        #     help='Specify which ExportData attribute to use as the graph node identifier.'
         # )
         # parser.add_argument(
         #     '--missing-tag',

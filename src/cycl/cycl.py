@@ -43,7 +43,7 @@ def get_graph_data(cdk_out_path: Path | None = None) -> dict[str, ExportData]:
 def build_graph(
     graph_data: dict[str, ExportData] | None = None,
     cdk_out_path: Path | None = None,
-    # node_key: Callable[[StackData], str] = lambda x: x.stack_name,
+    # node_key: Callable[[ExportData], str] = lambda x: x.stack_name,
     nodes_to_ignore: list[str] | None = None,
     edges_to_ignore: list[list[str]] | None = None,
 ) -> nx.MultiDiGraph:
