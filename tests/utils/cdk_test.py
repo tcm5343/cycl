@@ -6,8 +6,8 @@ from unittest.mock import patch
 import pytest
 
 import cycl.utils.cdk as cdk_module
-from cycl.models.stack_data import StackData
-from cycl.utils.cdk import InvalidCdkOutPathError, get_cdk_out_imports
+from cycl.models.export_data import ExportData
+from cycl.utils.cdk import InvalidCdkOutPathError, get_exports_from_assembly
 
 
 @pytest.fixture
@@ -50,7 +50,7 @@ def mock_walk():
         yield mock
 
 
-def test_get_cdk_out_imports_no_imports(cdk_out_mock, cdk_template_mock):
+def test_get_exports_from_assembly_no_imports(cdk_out_mock, cdk_template_mock):
     expected = {}
     cdk_template_mock = {}
 
@@ -58,28 +58,28 @@ def test_get_cdk_out_imports_no_imports(cdk_out_mock, cdk_template_mock):
     with template_path.open('w') as f:
         json.dump(cdk_template_mock, f)
 
-    actual = get_cdk_out_imports(cdk_out_mock)
+    actual = get_exports_from_assembly(cdk_out_mock)
 
     assert actual == expected
 
 
-def test_get_cdk_out_imports_has_imports(cdk_out_mock):
+def test_get_exports_from_assembly_has_imports(cdk_out_mock):
     expected = {
         'some-export-name-1': [
-            StackData(
+            ExportData(
                 export_name='some-export-name-1',
                 stack_name='some-stack-display-name-1',
             ),
         ],
     }
-    actual = get_cdk_out_imports(cdk_out_mock)
+    actual = get_exports_from_assembly(cdk_out_mock)
     assert actual == expected
 
 
-def test_get_cdk_out_imports_has_imports_in_list(cdk_out_mock, cdk_template_mock):
+def test_get_exports_from_assembly_has_imports_in_list(cdk_out_mock, cdk_template_mock):
     expected = {
         'some-export-name-1': [
-            StackData(
+            ExportData(
                 export_name='some-export-name-1',
                 stack_name='some-stack-display-name-1',
             ),
@@ -93,7 +93,7 @@ def test_get_cdk_out_imports_has_imports_in_list(cdk_out_mock, cdk_template_mock
     with template_path.open('w') as f:
         json.dump(cdk_template_mock, f)
 
-    actual = get_cdk_out_imports(cdk_out_mock)
+    actual = get_exports_from_assembly(cdk_out_mock)
     assert actual == expected
 
 
@@ -105,28 +105,26 @@ def test_get_cdk_out_raises_error_if_no_cdk_out_file_in_folder(cdk_out_mock):
     with pytest.raises(
         InvalidCdkOutPathError, match=rf'File named cdk.out not found in {cdk_out_mock}. Did you run `cdk synth`?'
     ):
-        get_cdk_out_imports(cdk_out_mock)
+        get_exports_from_assembly(cdk_out_mock)
 
 
 def test_get_cdk_out_raises_error_if_no_cdk_out_folder(cdk_out_mock):
     shutil.rmtree(cdk_out_mock)
 
     with pytest.raises(InvalidCdkOutPathError, match=rf'Provided path does not exist or is not a directory: {cdk_out_mock}'):
-        get_cdk_out_imports(cdk_out_mock)
+        get_exports_from_assembly(cdk_out_mock)
 
 
 def test_get_cdk_out_raises_error_if_pointing_to_file(cdk_out_mock):
     with pytest.raises(InvalidCdkOutPathError, match=rf'Provided path does not exist or is not a directory: {cdk_out_mock}'):
-        get_cdk_out_imports(cdk_out_mock / 'cdk.out')
+        get_exports_from_assembly(cdk_out_mock / 'cdk.out')
 
 
 def test_get_cdk_out_adds_cdk_out_dir_if_not_already_there(cdk_out_mock, cdk_template_mock, cdk_manifest_mock):
-    """
-    example is infra/ being passed instead of infra/cdk.out, simply append cdk.out/
-    """
+    """Example is `infra/` being passed instead of `infra/cdk.out`, simply append `cdk.out/`."""
     expected = {
         'some-export-name-1': [
-            StackData(
+            ExportData(
                 export_name='some-export-name-1',
                 stack_name='some-stack-display-name-1',
             ),
@@ -145,20 +143,20 @@ def test_get_cdk_out_adds_cdk_out_dir_if_not_already_there(cdk_out_mock, cdk_tem
     with manifest_path.open('w') as f:
         json.dump(cdk_manifest_mock, f)
 
-    actual = get_cdk_out_imports(cdk_out_mock.parent)
+    actual = get_exports_from_assembly(cdk_out_mock.parent)
     assert actual == expected
 
 
-def test_get_cdk_out_imports_with_two_stacks(cdk_out_mock, cdk_template_mock, cdk_manifest_mock):
+def test_get_exports_from_assembly_with_two_stacks(cdk_out_mock, cdk_template_mock, cdk_manifest_mock):
     expected = {
         'some-export-name-1': [
-            StackData(
+            ExportData(
                 export_name='some-export-name-1',
                 stack_name='some-stack-display-name-1',
             ),
         ],
         'some-export-name-2': [
-            StackData(
+            ExportData(
                 export_name='some-export-name-2',
                 stack_name='some-stack-display-name-2',
             ),
@@ -177,7 +175,7 @@ def test_get_cdk_out_imports_with_two_stacks(cdk_out_mock, cdk_template_mock, cd
     with manifest_path.open('w') as f:
         json.dump(cdk_manifest_mock, f)
 
-    actual = get_cdk_out_imports(cdk_out_mock)
+    actual = get_exports_from_assembly(cdk_out_mock)
     assert actual == expected
 
 
@@ -188,12 +186,12 @@ def test_get_cdk_out_imports_with_two_stacks(cdk_out_mock, cdk_template_mock, cd
         {'artifacts': {'test-stack-1': {'displayName': 'some-stack-display-name-1'}}},
     ],
 )
-def test_get_cdk_out_imports_skips_when_unable_to_resolve_stack_name(
+def test_get_exports_from_assembly_skips_when_unable_to_resolve_stack_name(
     cdk_out_mock, cdk_template_mock, cdk_manifest_mock, manifest_body
 ):
     expected = {
         'some-export-name-1': [
-            StackData(
+            ExportData(
                 export_name='some-export-name-1',
                 stack_name='some-stack-display-name-1',
             ),
@@ -210,20 +208,20 @@ def test_get_cdk_out_imports_skips_when_unable_to_resolve_stack_name(
     with manifest_path.open('w') as f:
         json.dump(cdk_manifest_mock, f)
 
-    actual = get_cdk_out_imports(cdk_out_mock)
+    actual = get_exports_from_assembly(cdk_out_mock)
     assert actual == expected
 
 
-def test_get_cdk_out_imports_with_stages(cdk_out_mock, cdk_template_mock, cdk_manifest_mock):
+def test_get_exports_from_assembly_with_stages(cdk_out_mock, cdk_template_mock, cdk_manifest_mock):
     expected = {
         'some-export-name-1': [
-            StackData(
+            ExportData(
                 export_name='some-export-name-1',
                 stack_name='some-stack-display-name-1',
             ),
         ],
         'some-export-name-2': [
-            StackData(
+            ExportData(
                 export_name='some-export-name-2',
                 stack_name='some-stack-display-name-2',
             ),
@@ -243,14 +241,14 @@ def test_get_cdk_out_imports_with_stages(cdk_out_mock, cdk_template_mock, cdk_ma
     with manifest_path.open('w') as f:
         json.dump(cdk_manifest_mock, f)
 
-    actual = get_cdk_out_imports(cdk_out_mock)
+    actual = get_exports_from_assembly(cdk_out_mock)
     assert actual == expected
 
 
-def test_get_cdk_out_imports_grabs_stack_name_first(cdk_out_mock, cdk_manifest_mock):
+def test_get_exports_from_assembly_grabs_stack_name_first(cdk_out_mock, cdk_manifest_mock):
     expected = {
         'some-export-name-1': [
-            StackData(
+            ExportData(
                 export_name='some-export-name-1',
                 stack_name='some-stack-name-1',
             ),
@@ -264,5 +262,5 @@ def test_get_cdk_out_imports_grabs_stack_name_first(cdk_out_mock, cdk_manifest_m
     with manifest_path.open('w') as f:
         json.dump(cdk_manifest_mock, f)
 
-    actual = get_cdk_out_imports(cdk_out_mock)
+    actual = get_exports_from_assembly(cdk_out_mock)
     assert actual == expected

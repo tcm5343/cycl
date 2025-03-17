@@ -1,6 +1,6 @@
 # import importlib.metadata
 
-from .cycl import build_dependency_graph
+from .cycl import build_graph, get_graph_data
 
-# todo: how to resolve?
+# TODO: how to resolve?
 # __version__ = importlib.metadata.version(__package__ or __name__)

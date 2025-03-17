@@ -4,7 +4,7 @@ import json
 from logging import getLogger
 from pathlib import Path
 
-from cycl.models.stack_data import StackData
+from cycl.models.export_data import ExportData
 
 log = getLogger(__name__)
 
@@ -15,7 +15,7 @@ class InvalidCdkOutPathError(Exception):
 
 
 def __find_import_values(data: dict) -> list[str]:
-    """recursively search for all 'Fn::ImportValue' keys and return their values"""
+    """Recursively search for all 'Fn::ImportValue' keys and return their values."""
     results = []
 
     if isinstance(data, dict):
@@ -33,16 +33,14 @@ def __find_import_values(data: dict) -> list[str]:
 
 
 def __get_import_values_from_template(file_path: Path) -> list[str]:
-    """todo: handle yaml templates too"""
+    """todo: handle yaml templates too."""
     with Path.open(file_path) as f:
         json_data = json.load(f)
     return __find_import_values(json_data)
 
 
 def __get_stack_name_from_manifest(path_to_manifest: Path, template_file_name: str) -> str:
-    """
-    Grabs the stack name, if set, or parses stack name from the displayName (construct id) of the stack
-    """
+    """Grabs the stack name, if set, or parses stack name from the displayName (construct id) of the stack."""
     with Path.open(path_to_manifest) as f:
         json_data = json.load(f)
 
@@ -74,18 +72,17 @@ def __validate_cdk_out_path(cdk_out_path: Path) -> Path:
     return cdk_out_path
 
 
-def get_cdk_out_imports(cdk_out_path: Path) -> dict[str, list[StackData]]:
-    """
-    map an export name to a list of stacks which import it
+def get_exports_from_assembly(cdk_out_path: Path) -> dict[str, list[ExportData]]:
+    """Map an export name to a list of stacks which import it from the cloud assembly.
 
-    function does not take into consideration exports
+    function does not take into consideration exports defined in the assembly
         - if we found an export, we may not be able to resolve the name of it
         - AWS has built in circular dependency detection inside of a stack
         - a circular dependency couldn't be introduced in a single deployment
     """
     cdk_out_path = __validate_cdk_out_path(cdk_out_path)
 
-    stack_import_mapping: dict[str, list[StackData]] = {}
+    stack_import_mapping: dict[str, list[ExportData]] = {}
     for template_file in cdk_out_path.rglob('*.template.json'):
         log.info('Processing template: %s', template_file)
         imported_export_names = __get_import_values_from_template(template_file)
@@ -101,7 +98,7 @@ def get_cdk_out_imports(cdk_out_path: Path) -> dict[str, list[StackData]]:
             log.info('stack name found: %s', stack_name)
             for export_name in imported_export_names:
                 stack_import_mapping.setdefault(export_name, []).append(
-                    StackData(
+                    ExportData(
                         stack_name=stack_name,
                         export_name=export_name,
                     )

@@ -8,35 +8,36 @@ from botocore.exceptions import ClientError
 
 if TYPE_CHECKING:
     from mypy_boto3_cloudformation import CloudFormationClient
+    from mypy_boto3_cloudformation.type_defs import ListExportsOutputTypeDef
 
 log = getLogger(__name__)
 
 
-class StackData:
-    def __init__(  # noqa: PLR0913
+class ExportData:
+    def __init__(
         self,
         stack_name: str,
         stack_id: str | None = None,
         export_name: str | None = None,
         export_value: str | None = None,
-        parent_id: str | None = None,
-        root_id: str | None = None,
-        tags: dict[str, str] | None = None,
-        outputs: list[str] | None = None,
-        importing_stacks: list[StackData] | None = None,
+        # parent_id: str | None = None,
+        # root_id: str | None = None,
+        # tags: dict[str, str] | None = None,
+        # outputs: list[str] | None = None,
+        importing_stacks: list[ExportData] | None = None,
     ) -> None:
         self.stack_name = stack_name
         self.stack_id = stack_id
         self.export_name = export_name
         self.export_value = export_value
-        self.parent_id = parent_id
-        self.root_id = root_id
-        self.tags = tags
-        self.outputs = outputs or []
+        # self.parent_id = parent_id
+        # self.root_id = root_id
+        # self.tags = tags
+        # self.outputs = outputs or []
         self.importing_stacks = importing_stacks or []
 
     @classmethod
-    def from_list_exports(cls, list_exports_resp: dict[str, str]) -> dict[str, StackData]:
+    def from_list_exports(cls, list_exports_resp: ListExportsOutputTypeDef) -> dict[str, ExportData]:
         """Convert an AWS CloudFormation list exports response into a dictionary of export name to StackData instances.
 
         Args:
@@ -61,7 +62,7 @@ class StackData:
         }
 
     @classmethod
-    def get_all_exports(cls, cfn_client: CloudFormationClient | None = None) -> dict[str, StackData]:
+    def get_all_exports(cls, cfn_client: CloudFormationClient | None = None) -> dict[str, ExportData]:
         """Retrieve all AWS CloudFormation exports and return them as a dictionary of export name to StackData instances.
 
         Args:
@@ -77,19 +78,19 @@ class StackData:
         """
         cfn_client = cfn_client or boto3.client('cloudformation')
 
-        exports: dict[str, StackData] = {}
+        exports: dict[str, ExportData] = {}
         resp = cfn_client.list_exports()
         log.debug(resp)
-        exports.update(StackData.from_list_exports(resp))
+        exports.update(ExportData.from_list_exports(resp))
         while token := resp.get('NextToken'):
             resp = cfn_client.list_exports(NextToken=token)
             log.debug(resp)
-            exports.update(StackData.from_list_exports(resp))
+            exports.update(ExportData.from_list_exports(resp))
         log.debug(exports)
         return exports
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, StackData):
+        if not isinstance(other, ExportData):
             return False
         return vars(self) == vars(other)
 
@@ -99,7 +100,7 @@ class StackData:
     def __repr__(self) -> str:
         return f'StackData(stack_name={self.stack_name!r}, export_name={self.export_name!r})'
 
-    def get_all_imports(self, cfn_client: CloudFormationClient | None = None) -> StackData:
+    def get_all_imports(self, cfn_client: CloudFormationClient | None = None) -> ExportData:
         """Retrieve all stacks that import the current export and update the importing_stacks attribute.
 
         Args:
@@ -112,25 +113,32 @@ class StackData:
             This function paginates through the AWS CloudFormation `list_imports` API to retrieve all importing stacks.
             If the export is not imported by any stack, it logs a debug message instead of raising an error.
         """
-        cfn_client = cfn_client or boto3.client('cloudformation')
+        if self.export_name:
+            cfn_client = cfn_client or boto3.client('cloudformation')
 
-        try:
-            resp = cfn_client.list_imports(ExportName=self.export_name)
-            log.debug(resp)
-            self.importing_stacks.extend(
-                [StackData(stack_name=importing_stack_name) for importing_stack_name in resp['Imports']]
-            )
-            while token := resp.get('NextToken'):
-                resp = cfn_client.list_imports(ExportName=self.export_name, NextToken=token)
+            try:
+                resp = cfn_client.list_imports(ExportName=self.export_name)
                 log.debug(resp)
                 self.importing_stacks.extend(
-                    [StackData(stack_name=importing_stack_name) for importing_stack_name in resp['Imports']]
+                    [ExportData(stack_name=importing_stack_name) for importing_stack_name in resp['Imports']]
                 )
-        except ClientError as err:
-            if 'is not imported by any stack' not in repr(err):
-                raise
-            log.debug('')  # TODO: log something helpful
-        log.debug(self.importing_stacks)
+                while token := resp.get('NextToken'):
+                    resp = cfn_client.list_imports(ExportName=self.export_name, NextToken=token)
+                    log.debug(resp)
+                    self.importing_stacks.extend(
+                        [ExportData(stack_name=importing_stack_name) for importing_stack_name in resp['Imports']]
+                    )
+            except ClientError as err:
+                if 'is not imported by any stack' not in repr(err):
+                    raise
+                log.debug('')  # TODO: refine msg
+            log.debug(self.importing_stacks)
+        else:
+            warning_msg = (
+                f'export_name not defined for {type(self).__name__}, which probably means {self.stack_name} '
+                'imports an export but does not export any'
+            )
+            log.warning(warning_msg)
         return self
 
     @staticmethod

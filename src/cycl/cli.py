@@ -7,10 +7,29 @@ from logging import getLogger
 
 import networkx as nx
 
-from cycl import build_dependency_graph
+from cycl import build_graph
 from cycl.utils.log_config import configure_log
 
 log = getLogger(__name__)
+
+
+# def get_node_key_function(node_key: str, missing_tag: str = 'ignore') -> Callable[[StackData], str]:
+#     if node_key.startswith("tag:"):
+#         tag_name = node_key.split(":", 1)[1]
+
+#         if missing_tag == 'error':
+#             return lambda x: x.tags[tag_name]  # strict mode
+
+#         default_value = f"Unknown-{tag_name}" if missing_tag == 'default' else x.stack_name
+#         return lambda x: x.tags.get(tag_name, default_value)
+
+#     node_key_map = {
+#         'stack_name': lambda x: x.stack_name,
+#         'export_name': lambda x: x.export_name or 'NoExport',
+#         'parent_id': lambda x: x.parent_id or 'NoParent',
+#     }
+
+#     return node_key_map.get(node_key, lambda x: x.stack_name)
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -56,6 +75,20 @@ def create_parser() -> argparse.ArgumentParser:
                 'repeated for each edge provided.'
             ),
         )
+        # p.add_argument(  # TODO
+        #     '--node-key',
+        #     type=str,
+        #     choices=['stack_name', 'export_name', 'parent_id', 'tag:Environment'],
+        #     default='stack_name',
+        #     help='Specify which StackData attribute to use as the graph node identifier.'
+        # )
+        # parser.add_argument(
+        #     '--missing-tag',
+        #     choices=['ignore', 'error', 'default'],
+        #     default='ignore',
+        #     help='How to handle missing tags: "ignore" (fallback to stack name), "error" (raise),
+        # or "default" (custom value).'
+        # )
     return parser
 
 
@@ -69,7 +102,7 @@ def app() -> None:
     args = parser.parse_args()
     configure_log(getattr(logging, args.log_level))
 
-    dep_graph = build_dependency_graph(
+    dep_graph = build_graph(
         cdk_out_path=args.cdk_out,
         nodes_to_ignore=args.ignore_nodes,
         edges_to_ignore=args.ignore_edge,

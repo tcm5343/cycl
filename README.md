@@ -8,7 +8,7 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/charliermarsh/ruff/main/assets/badge/v0.json)](https://github.com/charliermarsh/ruff)
 ![Checked with mypy](https://img.shields.io/badge/mypy-checked-blue)
 
-cycl is a CLI and Python SDK to help identify cross-stack import/export circular dependencies, for a given AWS account and region. The successor to [circular-dependency-detector](https://github.com/tcm5343/circular-dependency-detector), which was built at the University of Texas at Austin.
+cycl is a CLI and Python SDK to help identify cross-stack import/export circular dependencies, for a given AWS account and region. The successor to [circular-dependency-detector](https://github.com/tcm5343/circular-dependency-detector), which was built at the University of Texas at Austin (ECE 382C: Software Testing).
 
 ## Documentation
 
