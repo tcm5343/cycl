@@ -2,7 +2,7 @@
 requires = [
     'setuptools>=70', 
     'wheel',
-    'setuptools-git-versioning>=2.0,<3',
+    'setuptools-git-versioning>=2.1',
 ]
 build-backend = 'setuptools.build_meta'
 
@@ -33,7 +33,6 @@ dynamic = ['version']
 
 [tool.setuptools-git-versioning]
 enabled = true
-tag_formatter = "{tag}"
 
 [project.optional-dependencies]
 dev = [

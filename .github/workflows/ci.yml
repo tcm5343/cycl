@@ -84,7 +84,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: '0'
+          fetch-depth: '0'  # do i need to check out whole thing? TODO
 
       - uses: actions/setup-python@v5
         with:
