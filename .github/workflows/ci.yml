@@ -7,7 +7,7 @@ on:
     branches:
       - master
   push:
-    branches: ['master', 'main']
+    # branches: ['master', 'main']
   workflow_dispatch: 
 
 env:
