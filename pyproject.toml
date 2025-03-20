@@ -11,10 +11,10 @@ name = 'cycl'
 requires-python = '>=3.9'
 description = 'CLI and Python SDK to help identify cross-stack import/export circular dependencies, for a given AWS account and region.'
 readme = 'README.md'
+license = { file = "LICENSE" }
 keywords = ['aws', 'cdk', 'cycle', 'circular', 'dependency', 'infrastructure', 'boto3', 'cloud']
 classifiers = [
     'Intended Audience :: Developers',
-    'License :: OSI Approved :: MIT License',
     'Natural Language :: English',
     'Programming Language :: Python :: 3.10',
     'Programming Language :: Python :: 3.11',

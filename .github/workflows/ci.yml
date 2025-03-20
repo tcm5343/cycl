@@ -73,10 +73,11 @@ jobs:
         uses: actions/deploy-pages@v4
   
   create-release:
+    # needs: deploy-docs
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-    # needs: deploy-docs
+      id-token: write  # needed for publish to pypi
+      contents: write  # needed for tag creation
     steps:
       - uses: actions/checkout@v4
         with:
