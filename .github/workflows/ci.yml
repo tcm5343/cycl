@@ -92,7 +92,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WITH_V: false
-          PRERELEASE: true
+          PRERELEASE: true  # should be false only on PR close
+          PRERELEASE_SUFFIX: b
+          DRY_RUN: true
 
       - name: Create release
         env:
