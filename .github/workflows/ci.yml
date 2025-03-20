@@ -71,9 +71,36 @@ jobs:
   #     - name: Deploy to GitHub Pages
   #       id: deployment
   #       uses: actions/deploy-pages@v4
+      
+  build-dist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Checkout the tagged version
+        run: git checkout refs/tags/${{ needs.create-release.outputs.tag }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+
+      - name: Install build dependencies
+        run: python3 -m pip install .[dist]
+
+      - name: Build distribution
+        run: python3 -m build
+
+      - name: Upload distribution artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-artifacts
+          path: dist/
+          retention-days: 7  
   
   create-release:
-    # needs: deploy-docs
+    needs: build-dist
     runs-on: ubuntu-latest
     permissions:
       contents: write  # needed for tag creation
@@ -109,37 +136,9 @@ jobs:
               --repo="$GITHUB_REPOSITORY" \
               --title="${tag#v}" \
               --generate-notes
-      
-  build-dist:
-    needs: create-release
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          
-      - name: Checkout the tagged version
-        run: git checkout refs/tags/${{ needs.create-release.outputs.tag }}
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: 3.11
-
-      - name: Install build dependencies
-        run: python3 -m pip install .[dist]
-
-      - name: Build distribution
-        run: python3 -m build
-
-      - name: Upload distribution artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-artifacts
-          path: dist/
-          retention-days: 7  
 
   deploy-dist:
-    needs: build-dist
+    needs: create-release
     runs-on: ubuntu-latest
     environment:
       name: release
@@ -160,7 +159,7 @@ jobs:
           verbose: true
       
       - name: Publish distribution
-        uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc  # v1.12.4
+        uses: pypa/gh-action-pypi-publish@eb1f8af09339c65863225679e2635cb50119faaf  # v1.12.4
         with:
           repository-url: https://test.pypi.org/legacy/
           verbose: true
