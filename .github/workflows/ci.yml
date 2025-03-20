@@ -75,6 +75,8 @@ jobs:
   create-release:
     # needs: deploy-docs
     runs-on: ubuntu-latest
+    environment:
+      name: release
     permissions:
       id-token: write  # needed for publish to pypi
       contents: write  # needed for tag creation
@@ -116,5 +118,5 @@ jobs:
       - name: Publish distribution
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          repository-url: https://test.pypi.org/legacy/
+          repository-url: https://test.pypi.org/simple/
         
