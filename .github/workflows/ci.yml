@@ -75,11 +75,7 @@ jobs:
   create-release:
     # needs: deploy-docs
     runs-on: ubuntu-latest
-    environment:
-      name: release
-      # url: https://test.pypi.org/p/cycl
     permissions:
-      id-token: write  # needed for publish to pypi
       contents: write  # needed for tag creation
     outputs:
       tag: ${{ steps.tag.outputs.new_tag }}
@@ -142,6 +138,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: release
+      url: https://test.pypi.org/p/cycl
     permissions:
       id-token: write  # needed for publishing to PyPI
     steps:
