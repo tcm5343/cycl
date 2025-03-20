@@ -34,28 +34,28 @@ jobs:
           TOXENV="py$(echo ${{ matrix.python-version }} | sed 's/\.//')"
           tox -e "${TOXENV}"
 
-  # build-docs:
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: write
-  #   steps:
-  #     - uses: actions/checkout@v4
+  build-docs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
 
-  #     - uses: actions/setup-python@v5
-  #       with:
-  #         python-version: 3.11
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
 
-  #     - name: Install dependencies
-  #       run: pip install -e .[doc]
+      - name: Install dependencies
+        run: pip install -e .[doc]
 
-  #     - name: Sphinx build
-  #       run: sphinx-build docs docs/_build --builder html --fresh-env
+      - name: Sphinx build
+        run: sphinx-build docs docs/_build --builder html --fresh-env
 
-  #     - name: Upload static files as artifact
-  #       id: deployment
-  #       uses: actions/upload-pages-artifact@v3
-  #       with:
-  #         path: docs/_build/
+      - name: Upload static files as artifact
+        id: deployment
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/_build/
   
   # deploy-docs:          
   #   if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
@@ -115,6 +115,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Checkout the tagged version
+        run: git checkout refs/tags/${{ needs.create-release.outputs.tag }}
 
       - uses: actions/setup-python@v5
         with:
