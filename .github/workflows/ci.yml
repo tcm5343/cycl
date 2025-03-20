@@ -33,74 +33,9 @@ jobs:
         run: |
           TOXENV="py$(echo ${{ matrix.python-version }} | sed 's/\.//')"
           tox -e "${TOXENV}"
-
-  build-docs:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: 3.11
-
-      - name: Install dependencies
-        run: pip install -e .[doc]
-
-      - name: Sphinx build
-        run: sphinx-build docs docs/_build --builder html --fresh-env
-
-      - name: Upload static files as artifact
-        id: deployment
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: docs/_build/
-  
-  # deploy-docs:          
-  #   if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-  #   needs: build-docs
-  #   runs-on: ubuntu-latest
-  #   environment:
-  #     name: github-pages
-  #     url: ${{ steps.deployment.outputs.page_url }}
-  #   permissions:
-  #     pages: write      # to deploy to Pages
-  #     id-token: write   # to verify the deployment originates from an appropriate source
-  #   steps:
-  #     - name: Deploy to GitHub Pages
-  #       id: deployment
-  #       uses: actions/deploy-pages@v4
-      
-  build-dist:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          
-      - name: Checkout the tagged version
-        run: git checkout refs/tags/${{ needs.create-release.outputs.tag }}
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: 3.11
-
-      - name: Install build dependencies
-        run: python3 -m pip install .[dist]
-
-      - name: Build distribution
-        run: python3 -m build
-
-      - name: Upload distribution artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-artifacts
-          path: dist/
-          retention-days: 7  
   
   create-release:
-    needs: build-dist
+    needs: validation
     runs-on: ubuntu-latest
     permissions:
       contents: write  # needed for tag creation
@@ -137,14 +72,81 @@ jobs:
               --title="${tag#v}" \
               --generate-notes
 
-  deploy-dist:
+  build-docs:
     needs: create-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+
+      - name: Install dependencies
+        run: pip install -e .[doc]
+
+      - name: Sphinx build
+        run: sphinx-build docs docs/_build --builder html --fresh-env
+
+      - name: Upload static files as artifact
+        id: deployment
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/_build/
+  
+  deploy-docs:          
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    needs: build-docs
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write      # to deploy to Pages
+      id-token: write   # to verify the deployment originates from an appropriate source
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+      
+  build-dist:
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Checkout the tagged version
+        run: git checkout refs/tags/${{ needs.create-release.outputs.tag }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+
+      - name: Install build dependencies
+        run: python3 -m pip install .[dist]
+
+      - name: Build distribution
+        run: python3 -m build
+
+      - name: Upload distribution artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-artifacts
+          path: dist/
+          retention-days: 7  
+
+  deploy-test-pypi:
+    needs: build-dist
     runs-on: ubuntu-latest
     environment:
       name: release
       url: https://test.pypi.org/p/cycl
     permissions:
-      id-token: write  # needed for publishing to PyPI
+      id-token: write   # needed for publishing to PyPI
     steps:
       - name: Download built distribution
         uses: actions/download-artifact@v4
