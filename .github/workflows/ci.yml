@@ -97,8 +97,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WITH_V: false
           PRERELEASE: true  # should be false only on PR close
-          # PRERELEASE_SUFFIX: b
-          DRY_RUN: true
+          PRERELEASE_SUFFIX: b
+          DRY_RUN: false
           DEFAULT_BUMP: patch
           GIT_API_TAGGING: false
 
