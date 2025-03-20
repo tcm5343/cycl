@@ -33,6 +33,7 @@ dynamic = ['version']
 
 [tool.setuptools-git-versioning]
 enabled = true
+template = "{tag}"
 
 [project.optional-dependencies]
 dev = [
