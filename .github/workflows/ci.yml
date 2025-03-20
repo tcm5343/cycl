@@ -11,28 +11,28 @@ env:
   PYTHONPATH: './src:./test'
 
 jobs:
-  # build:
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       os: ['ubuntu-latest']
-  #       python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
-  #   runs-on: ${{ matrix.os }}
-  #   steps:
-  #     - uses: actions/checkout@v4
+  validation:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ['ubuntu-latest']
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
 
-  #     - uses: actions/setup-python@v5
-  #       with:
-  #         python-version: ${{ matrix.python-version }}
-  #         cache: 'pip'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
 
-  #     - name: setup tox
-  #       run: pip install tox
+      - name: setup tox
+        run: pip install tox
 
-  #     - name: test
-  #       run: |
-  #         TOXENV="py$(echo ${{ matrix.python-version }} | sed 's/\.//')"
-  #         tox -e "${TOXENV}"
+      - name: test
+        run: |
+          TOXENV="py$(echo ${{ matrix.python-version }} | sed 's/\.//')"
+          tox -e "${TOXENV}"
 
   # build-docs:
   #   runs-on: ubuntu-latest
@@ -77,14 +77,16 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: release
-      url: https://test.pypi.org/p/cycl
+      # url: https://test.pypi.org/p/cycl
     permissions:
       id-token: write  # needed for publish to pypi
       contents: write  # needed for tag creation
+    outputs:
+      tag: ${{ steps.tag.outputs.new_tag }}
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: '0'  # do i need to check out whole thing? TODO
+          fetch-depth: '0'
 
       - uses: actions/setup-python@v5
         with:
@@ -107,20 +109,56 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ steps.tag.outputs.new_tag }}
         run: |
-          gh release create "$tag" \
+          gh release create "${tag}" \
               --repo="$GITHUB_REPOSITORY" \
               --title="${tag#v}" \
               --generate-notes
       
+  build-dist:
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+
+      - name: Install build dependencies
+        run: python3 -m pip install .[dist]
+
       - name: Build distribution
-        shell: bash
-        run: |
-          python3 -m pip install .[dist]
-          python3 -m build
+        run: python3 -m build
+
+      - name: Upload distribution artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-artifacts
+          path: dist/
+          retention-days: 7  
+
+  deploy-dist:
+    needs: build-dist
+    runs-on: ubuntu-latest
+    environment:
+      name: release
+    permissions:
+      id-token: write  # needed for publishing to PyPI
+    steps:
+      - name: Download built distribution
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-artifacts
+          path: dist/
+
+      - name: Publish distribution to PyPI
+        uses: pypa/gh-action-pypi-publish@v1.12.4
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          verbose: true
       
       - name: Publish distribution
         uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc  # v1.12.4
         with:
           repository-url: https://test.pypi.org/legacy/
           verbose: true
-        

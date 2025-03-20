@@ -9,29 +9,12 @@ jobs:
   build:
     runs-on: 'ubuntu-latest' 
     steps:
-        - name: dump context
-          run: echo "$GITHUB_CONTEXT"
-          env:
-            GITHUB_CONTEXT: ${{ toJSON(github) }}
+        # - name: dump context
+        #   run: echo "$GITHUB_CONTEXT"
+        #   env:
+        #     GITHUB_CONTEXT: ${{ toJSON(github) }}
 
         - uses: actions/checkout@v4
           with:
             ref: ${{ github.event.release.target_commitish }}
             persist-credentials: false
-
-        - uses: actions/setup-python@v5
-          with:
-            python-version: '3.13'
-            cache: 'pip'
-  
-        - name: install deps
-          run: pip install -r requirements-build.txt
-  
-        - name: build
-          run: python3 -m build
-
-        - name: Store the distribution packages
-          uses: actions/upload-artifact@v4
-          with:
-            name: pkg-dist
-            path: dist/
