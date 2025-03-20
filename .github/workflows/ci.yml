@@ -5,68 +5,122 @@ on:
     types: [opened, synchronize]
   push:
     branches: ['master', 'main']
+  workflow_dispatch: 
 
 env:
   PYTHONPATH: './src:./test'
 
 jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: ['ubuntu-latest']
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
+  # build:
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       os: ['ubuntu-latest']
+  #       python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+  #   runs-on: ${{ matrix.os }}
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'pip'
+  #     - uses: actions/setup-python@v5
+  #       with:
+  #         python-version: ${{ matrix.python-version }}
+  #         cache: 'pip'
 
-      - name: setup tox
-        run: pip install tox
+  #     - name: setup tox
+  #       run: pip install tox
 
-      - name: test
-        run: |
-          TOXENV="py$(echo ${{ matrix.python-version }} | sed 's/\.//')"
-          tox -e "${TOXENV}"
+  #     - name: test
+  #       run: |
+  #         TOXENV="py$(echo ${{ matrix.python-version }} | sed 's/\.//')"
+  #         tox -e "${TOXENV}"
 
-  build-docs:
+  # build-docs:
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: write
+  #   steps:
+  #     - uses: actions/checkout@v4
+
+  #     - uses: actions/setup-python@v5
+  #       with:
+  #         python-version: 3.11
+
+  #     - name: Install dependencies
+  #       run: pip install -e .[doc]
+
+  #     - name: Sphinx build
+  #       run: sphinx-build docs docs/_build --builder html --fresh-env
+
+  #     - name: Upload static files as artifact
+  #       id: deployment
+  #       uses: actions/upload-pages-artifact@v3
+  #       with:
+  #         path: docs/_build/
+  
+  # deploy-docs:          
+  #   if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+  #   needs: build-docs
+  #   runs-on: ubuntu-latest
+  #   environment:
+  #     name: github-pages
+  #     url: ${{ steps.deployment.outputs.page_url }}
+  #   permissions:
+  #     pages: write      # to deploy to Pages
+  #     id-token: write   # to verify the deployment originates from an appropriate source
+  #   steps:
+  #     - name: Deploy to GitHub Pages
+  #       id: deployment
+  #       uses: actions/deploy-pages@v4
+  
+  create-release:
+    # needs: deploy-docs
     runs-on: ubuntu-latest
+    environment:
+      name: release
+      url: https://test.pypi.org/p/cycl
     permissions:
-      contents: write
+      id-token: write  # needed for publish to pypi
+      contents: write  # needed for tag creation
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: '0'  # do i need to check out whole thing? TODO
 
       - uses: actions/setup-python@v5
         with:
           python-version: 3.11
 
-      - name: Install dependencies
-        run: pip install -e .[doc]
+      - name: Bump version and push tag
+        id: tag
+        uses: anothrNick/github-tag-action@f278d49d30cdd8775cc3e7dd00b5ee11686ee297  # v1.71.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WITH_V: false
+          PRERELEASE: true  # should be false only on PR close
+          PRERELEASE_SUFFIX: b
+          DRY_RUN: false
+          DEFAULT_BUMP: patch
+          GIT_API_TAGGING: false
 
-      - name: Sphinx build
-        run: sphinx-build docs docs/_build --builder html --fresh-env
-
-      - name: Upload static files as artifact
-        id: deployment
-        uses: actions/upload-pages-artifact@v3
+      - name: Create release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ steps.tag.outputs.new_tag }}
+        run: |
+          gh release create "$tag" \
+              --repo="$GITHUB_REPOSITORY" \
+              --title="${tag#v}" \
+              --generate-notes
+      
+      - name: Build distribution
+        shell: bash
+        run: |
+          python3 -m pip install .[dist]
+          python3 -m build
+      
+      - name: Publish distribution
+        uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc  # v1.12.4
         with:
-          path: docs/_build/
-  
-  deploy-doc:          
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-    needs: build-docs
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    permissions:
-      pages: write      # to deploy to Pages
-      id-token: write   # to verify the deployment originates from an appropriate source
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          repository-url: https://test.pypi.org/legacy/
+          verbose: true
+        
