@@ -2,7 +2,10 @@ name: CI
 
 on:
   pull_request:
-    types: [opened, synchronize]
+    types:
+      - closed
+    branches:
+      - master
   push:
     branches: ['master', 'main']
   workflow_dispatch: 
@@ -33,47 +36,57 @@ jobs:
         run: |
           TOXENV="py$(echo ${{ matrix.python-version }} | sed 's/\.//')"
           tox -e "${TOXENV}"
-  
-  create-release:
+
+  create-test-release:
     needs: validation
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write  # needed for tag creation
-    outputs:
-      tag: ${{ steps.tag.outputs.new_tag }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: '0'
+    uses: ./.github/workflows/release.yml
+    with:
+      pre-release: "true"
+      python-version: "3.11"
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}
+    # permissions:
+    #   contents: write  # needed for tag creation
+  
+  # create-test-release:
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: write  # needed for tag creation
+  #   outputs:
+  #     tag: ${{ steps.tag.outputs.new_tag }}
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: '0'
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: 3.11
+  #     - uses: actions/setup-python@v5
+  #       with:
+  #         python-version: 3.11
 
-      - name: Bump version and push tag
-        id: tag
-        uses: anothrNick/github-tag-action@f278d49d30cdd8775cc3e7dd00b5ee11686ee297  # v1.71.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          WITH_V: false
-          PRERELEASE: true  # should be false only on PR close
-          PRERELEASE_SUFFIX: b
-          DRY_RUN: false
-          DEFAULT_BUMP: patch
-          GIT_API_TAGGING: false
+  #     - name: Bump version and push tag
+  #       id: tag
+  #       uses: anothrNick/github-tag-action@f278d49d30cdd8775cc3e7dd00b5ee11686ee297  # v1.71.0
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #         WITH_V: false
+  #         PRERELEASE: true
+  #         PRERELEASE_SUFFIX: b
+  #         DRY_RUN: false
+  #         DEFAULT_BUMP: patch
+  #         GIT_API_TAGGING: false
 
-      - name: Create release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ steps.tag.outputs.new_tag }}
-        run: |
-          gh release create "${tag}" \
-              --repo="$GITHUB_REPOSITORY" \
-              --title="${tag#v}" \
-              --generate-notes
+  #     - name: Create release
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #         tag: ${{ steps.tag.outputs.new_tag }}
+  #       run: |
+  #         gh release create "${tag}" \
+  #             --repo="$GITHUB_REPOSITORY" \
+  #             --title="${tag#v}" \
+  #             --generate-notes
 
   build-docs:
-    needs: create-release
+    needs: create-test-release
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -111,8 +124,8 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
       
-  build-dist:
-    needs: create-release
+  build-test-dist:
+    needs: create-test-release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -120,7 +133,7 @@ jobs:
           fetch-depth: 0
           
       - name: Checkout the tagged version
-        run: git checkout refs/tags/${{ needs.create-release.outputs.tag }}
+        run: git checkout refs/tags/${{ needs.create-test-release.outputs.tag }}
 
       - uses: actions/setup-python@v5
         with:
@@ -135,12 +148,12 @@ jobs:
       - name: Upload distribution artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: dist-artifacts
+          name: test-pypi-dist
           path: dist/
           retention-days: 7  
 
   deploy-test-pypi:
-    needs: build-dist
+    needs: build-test-dist
     runs-on: ubuntu-latest
     environment:
       name: release
@@ -151,7 +164,7 @@ jobs:
       - name: Download built distribution
         uses: actions/download-artifact@v4
         with:
-          name: dist-artifacts
+          name: test-pypi-dist
           path: dist/
       
       - name: Publish distribution
