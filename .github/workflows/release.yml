@@ -20,8 +20,8 @@ on:
 jobs:
   create-release:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write  # needed for tag creation
+    # permissions:
+    #   contents: write  # needed for tag creation
     outputs:
       tag: ${{ steps.tag.outputs.new_tag }}
     steps:

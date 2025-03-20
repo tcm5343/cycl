@@ -40,13 +40,13 @@ jobs:
   create-test-release:
     needs: validation
     uses: ./.github/workflows/release.yml
+    permissions:
+      contents: write  # needed for tag creation
     with:
       pre-release: "true"
       python-version: "3.11"
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
-    # permissions:
-    #   contents: write  # needed for tag creation
   
   # create-test-release:
   #   runs-on: ubuntu-latest
