@@ -161,7 +161,7 @@ jobs:
           verbose: true
       
       - name: Publish distribution
-        uses: pypa/gh-action-pypi-publish@eb1f8af09339c65863225679e2635cb50119faaf  # v1.12.4
+        uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc  # v1.12.4
         with:
           repository-url: https://test.pypi.org/legacy/
           verbose: true
