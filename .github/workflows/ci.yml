@@ -105,3 +105,15 @@ jobs:
               --repo="$GITHUB_REPOSITORY" \
               --title="${GITHUB_REPOSITORY#*/} ${tag#v}" \
               --generate-notes
+      
+      - name: Build distribution
+        shell: bash
+        run: |
+          python3 -m pip install .[dist]
+          python3 -m build
+      
+      - name: Publish distribution
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+        
