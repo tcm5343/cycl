@@ -2,15 +2,15 @@ name: CI
 
 on:
   pull_request:
-    types:
-      - closed
-    branches: ['master', 'main']
+    types: ['closed']
+    branches: ['main']
   push:
-    # branches: ['master', 'main']
+    branches: ['**', '!main']
   workflow_dispatch:
 
 env:
   PYTHONPATH: './src:./test'
+  PYTHON_VERSION: '3.11'  # TODO: use this
 
 jobs:
   quality-check:
