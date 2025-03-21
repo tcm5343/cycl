@@ -61,8 +61,10 @@ jobs:
       - name: Set artifact name
         id: set-artifact-name
         run: |
-          ARTIFACT_PREFIX="${{ inputs.dist-artifact-prefix && '-' || '' }}"
-          ARTIFACT_NAME="${ARTIFACT_PREFIX}dist-artifact"
+          ARTIFACT_NAME="dist-artifact"
+          if [ -n "${{ inputs.dist-artifact-prefix }}" ]; then
+            ARTIFACT_NAME="${{ inputs.dist-artifact-prefix }}-${ARTIFACT_NAME}"
+          else
           echo "name=$ARTIFACT_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Upload distribution artifacts
