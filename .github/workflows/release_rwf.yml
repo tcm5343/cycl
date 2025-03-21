@@ -6,9 +6,6 @@ on:
       pre-release:
         required: true
         type: string
-      python-version:
-        required: false
-        type: string
     secrets:
       token:
         required: true

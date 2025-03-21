@@ -13,43 +13,41 @@ env:
   PYTHONPATH: './src:./test'
 
 jobs:
-  # validation:
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       os: ['ubuntu-latest']
-  #       python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
-  #   runs-on: ${{ matrix.os }}
-  #   steps:
-  #     - uses: actions/checkout@v4
+  quality-check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ['ubuntu-latest']
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
 
-  #     - uses: actions/setup-python@v5
-  #       with:
-  #         python-version: ${{ matrix.python-version }}
-  #         cache: 'pip'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
 
-  #     - name: setup tox
-  #       run: pip install tox
+      - name: setup tox
+        run: pip install tox
 
-  #     - name: test
-  #       run: |
-  #         TOXENV="py$(echo ${{ matrix.python-version }} | sed 's/\.//')"
-  #         tox -e "${TOXENV}"
+      - name: test
+        run: |
+          TOXENV="py$(echo ${{ matrix.python-version }} | sed 's/\.//')"
+          tox -e "${TOXENV}"
 
   release-test:
-    # if: github.event.pull_request.merged == true
-    # needs: validation
+    needs: quality-check
     uses: ./.github/workflows/release_rwf.yml
     permissions:
       contents: write  # needed for tag creation
     with:
       pre-release: "true"
-      python-version: "3.11"
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
 
   build-docs:
-    needs: release-test
+    needs: quality-check
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -91,7 +89,8 @@ jobs:
           path: docs/_build/
 
   deploy-docs:
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    if: github.event.pull_request.merged == true
+    # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     needs: build-docs
     runs-on: ubuntu-latest
     environment:
@@ -106,7 +105,7 @@ jobs:
         uses: actions/deploy-pages@v4
 
   package-test:
-    # if: github.event.pull_request.merged == true
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
     needs: release-test
     uses: ./.github/workflows/package_rwf.yml
     with:
@@ -118,7 +117,7 @@ jobs:
     needs: package-test
     runs-on: ubuntu-latest
     environment:
-      name: release
+      name: test
       url: https://test.pypi.org/p/cycl
     permissions:
       id-token: write   # needed for publishing to PyPI
@@ -134,3 +133,42 @@ jobs:
         with:
           repository-url: https://test.pypi.org/legacy/
           verbose: true
+
+  release-prod:
+    if: github.event.pull_request.merged == true
+    needs: deploy-test
+    uses: ./.github/workflows/release_rwf.yml
+    permissions:
+      contents: write  # needed for tag creation
+    with:
+      pre-release: "false"
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}
+
+  package-prod:
+    if: github.event.pull_request.merged == true
+    needs: release-prod
+    uses: ./.github/workflows/package_rwf.yml
+    with:
+      tag: "${{ needs.release-prod.outputs.tag }}"
+      python-version: "3.11"
+      dist-artifact-prefix: "test"
+
+  deploy-prod:
+    if: github.event.pull_request.merged == true
+    needs: package-prod
+    runs-on: ubuntu-latest
+    environment:
+      name: prod
+      url: https://pypi.org/p/cycl
+    permissions:
+      id-token: write   # needed for publishing to PyPI
+    steps:
+      - name: Download built distribution
+        uses: actions/download-artifact@v4
+        with:
+          name: "${{ needs.package-prod.outputs.artifact-name }}"
+          path: dist/
+
+      - name: Publish distribution
+        uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc  # v1.12.4
