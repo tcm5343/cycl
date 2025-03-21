@@ -114,52 +114,6 @@ jobs:
       python-version: "3.11"
       dist-artifact-prefix: "test"
 
-  # build-test-dist:
-  #   needs: release-test
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #       with:
-  #         fetch-depth: 0
-
-  #     - name: Checkout the tagged version
-  #       run: git checkout refs/tags/${{ needs.release-test.outputs.tag }}
-
-  #     - uses: actions/setup-python@v5
-  #       with:
-  #         python-version: 3.11
-  #         cache: 'pip'
-
-  #     - name: Restore cached venv
-  #       id: restore-cache
-  #       uses: actions/cache/restore@v3
-  #       with:
-  #         path: ./.venv
-  #         key: ${{ runner.os }}-dist-venv-${{ hashFiles('**/pyproject.toml') }}
-
-  #     - name: Install build dependencies
-  #       if: steps.restore-cache.outputs.cache-hit != 'true'
-  #       run: |
-  #         python -m venv .venv
-  #         ./.venv/bin/python -m pip install .[dist]
-
-  #     - name: Cache venv
-  #       if: steps.restore-cache.outputs.cache-hit != 'true'
-  #       uses: actions/cache/save@v3
-  #       with:
-  #         path: ./.venv
-  #         key: ${{ steps.restore-cache.outputs.cache-primary-key }}
-
-  #     - name: Build distribution
-  #       run: ./.venv/bin/python -m build
-
-  #     - name: Upload distribution artifacts
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: test-pypi-dist
-  #         path: dist/
-  #         retention-days: 7
-
   deploy-test:
     needs: package-test
     runs-on: ubuntu-latest

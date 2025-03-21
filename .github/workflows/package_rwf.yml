@@ -65,11 +65,11 @@ jobs:
           if [ -n "${{ inputs.dist-artifact-prefix }}" ]; then
             ARTIFACT_NAME="${{ inputs.dist-artifact-prefix }}-${ARTIFACT_NAME}"
           fi
-          echo "name=$ARTIFACT_NAME" >> "$GITHUB_OUTPUT"
+          echo "artifact-name=$ARTIFACT_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Upload distribution artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.set-artifact-name.outputs.name }}
+          name: ${{ steps.set-artifact-name.outputs.artifact-name }}
           path: dist/
           retention-days: 7
