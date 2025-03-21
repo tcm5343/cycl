@@ -105,10 +105,10 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-  dist-test:
+  package-test:
     # if: github.event.pull_request.merged == true
     needs: release-test
-    uses: ./.github/workflows/build_dist_rwf.yml
+    uses: ./.github/workflows/package_rwf.yml
     with:
       tag: "${{ needs.release-test.outputs.tag }}"
       python-version: "3.11"
@@ -161,7 +161,7 @@ jobs:
   #         retention-days: 7  
 
   deploy-test:
-    needs: dist-test
+    needs: package-test
     runs-on: ubuntu-latest
     environment:
       name: release
@@ -172,7 +172,7 @@ jobs:
       - name: Download built distribution
         uses: actions/download-artifact@v4
         with:
-          name: "${{ needs.dist-test.outputs.artifact-id }}"
+          name: "${{ needs.package-test.outputs.artifact-name }}"
           path: dist/
       
       - name: Publish distribution

@@ -1,4 +1,4 @@
-name: Build Distribution
+name: Package
 
 on:  
   workflow_call:
@@ -13,15 +13,15 @@ on:
         required: false
         type: string
     outputs:
-      artifact-id:
-        description: "Artifact ID of the distribution."
-        value: ${{ jobs.build.outputs.artifact-id }}
+      artifact-name:
+        description: "Artifact name of the distribution."
+        value: ${{ jobs.build.outputs.artifact-name }}
 
 jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
-      artifact-id: ${{ steps.artifact-upload-step.outputs.artifact-id }}
+      artifact-name: ${{ steps.set-artifact-name.outputs.artifact-name }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -58,10 +58,16 @@ jobs:
       - name: Build distribution
         run: ./.venv/bin/python -m build
 
+      - name: Set artifact name
+        id: set-artifact-name
+        run: |
+          ARTIFACT_PREFIX="${{ inputs.dist-artifact-prefix && '-' || '' }}"
+          ARTIFACT_NAME="${ARTIFACT_PREFIX}dist-artifact"
+          echo "name=$ARTIFACT_NAME" >> "$GITHUB_OUTPUT"
+
       - name: Upload distribution artifacts
-        id: artifact-upload-step
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.dist-artifact-prefix && '-' || '' }}dist-artifact
+          name: ${{ steps.set-artifact-name.outputs.name }}
           path: dist/
           retention-days: 7  
