@@ -22,6 +22,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       artifact-name: ${{ steps.set-artifact-name.outputs.artifact-name }}
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
         with:
