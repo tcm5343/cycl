@@ -37,6 +37,7 @@ jobs:
           tox -e "${TOXENV}"
 
   release-test:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
     needs: quality-check
     uses: ./.github/workflows/release_rwf.yml
     permissions:
