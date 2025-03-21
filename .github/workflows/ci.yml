@@ -7,7 +7,7 @@ on:
     branches: ['master', 'main']
   push:
     # branches: ['master', 'main']
-  workflow_dispatch: 
+  workflow_dispatch:
 
 env:
   PYTHONPATH: './src:./test'
@@ -89,8 +89,8 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: docs/_build/
-  
-  deploy-docs:          
+
+  deploy-docs:
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     needs: build-docs
     runs-on: ubuntu-latest
@@ -113,7 +113,7 @@ jobs:
       tag: "${{ needs.release-test.outputs.tag }}"
       python-version: "3.11"
       dist-artifact-prefix: "test"
-      
+
   # build-test-dist:
   #   needs: release-test
   #   runs-on: ubuntu-latest
@@ -121,7 +121,7 @@ jobs:
   #     - uses: actions/checkout@v4
   #       with:
   #         fetch-depth: 0
-          
+
   #     - name: Checkout the tagged version
   #       run: git checkout refs/tags/${{ needs.release-test.outputs.tag }}
 
@@ -158,7 +158,7 @@ jobs:
   #       with:
   #         name: test-pypi-dist
   #         path: dist/
-  #         retention-days: 7  
+  #         retention-days: 7
 
   deploy-test:
     needs: package-test
@@ -174,7 +174,7 @@ jobs:
         with:
           name: "${{ needs.package-test.outputs.artifact-name }}"
           path: dist/
-      
+
       - name: Publish distribution
         uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc  # v1.12.4
         with:

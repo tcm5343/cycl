@@ -1,6 +1,6 @@
-name: Release
+name: Release Reusable Workflow
 
-on:  
+on:
   workflow_call:
     inputs:
       pre-release:
