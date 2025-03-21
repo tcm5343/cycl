@@ -27,10 +27,6 @@ jobs:
         with:
           fetch-depth: '0'  # fetches tags
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "${{ inputs.python-version }}"
-
       - name: Bump version and push tag
         id: tag
         uses: anothrNick/github-tag-action@f278d49d30cdd8775cc3e7dd00b5ee11686ee297  # v1.71.0

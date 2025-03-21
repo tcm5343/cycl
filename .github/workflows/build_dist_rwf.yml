@@ -1,0 +1,70 @@
+name: Build Distribution
+
+on:  
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+      python-version:
+        required: false
+        type: string
+      dist-artifact-prefix:
+        required: false
+        type: string
+    secrets:
+      token:
+        required: true
+    outputs:
+      artifact-id:
+        description: "Artifact ID of the distribution."
+        value: ${{ jobs.build.outputs.artifact-id }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      artifact-id: ${{ steps.artifact-upload-step.outputs.artifact-id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Checkout the tagged version
+        run: git checkout refs/tags/${{ inputs.tag }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "${{ inputs.python-version }}"
+          cache: 'pip'
+
+      - name: Restore cached venv
+        id: restore-cache
+        uses: actions/cache/restore@v3
+        with:
+          path: ./.venv
+          key: ${{ runner.os }}-dist-venv-${{ hashFiles('**/pyproject.toml') }}
+
+      - name: Install build dependencies
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        run: |
+          python -m venv .venv
+          ./.venv/bin/python -m pip install .[dist]
+
+      - name: Cache venv
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v3
+        with:
+          path: ./.venv
+          key: ${{ steps.restore-cache.outputs.cache-primary-key }}
+
+      - name: Build distribution
+        run: ./.venv/bin/python -m build
+
+      - name: Upload distribution artifacts
+        id: artifact-upload-step
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.dist-artifact-prefix && '-' || '' }}dist-artifact
+          path: dist/
+          retention-days: 7  

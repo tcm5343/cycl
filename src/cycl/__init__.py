@@ -6,5 +6,3 @@ try:
     __version__ = version('cycl')
 except PackageNotFoundError:
     __version__ = 'v?'
-
-print(__version__)
