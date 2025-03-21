@@ -2,15 +2,18 @@ name: CI
 
 on:
   pull_request:
-    types: [opened, synchronize]
+    types: ['closed']
+    branches: ['main']
   push:
-    branches: ['master', 'main']
+    branches: ['**', '!main']
+  workflow_dispatch:
 
 env:
   PYTHONPATH: './src:./test'
+  PYTHON_VERSION: '3.11'  # TODO: use this
 
 jobs:
-  build:
+  quality-check:
     strategy:
       fail-fast: false
       matrix:
@@ -33,7 +36,19 @@ jobs:
           TOXENV="py$(echo ${{ matrix.python-version }} | sed 's/\.//')"
           tox -e "${TOXENV}"
 
+  release-test:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
+    needs: quality-check
+    uses: ./.github/workflows/release_rwf.yml
+    permissions:
+      contents: write  # needed for tag creation
+    with:
+      pre-release: "true"
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}
+
   build-docs:
+    needs: quality-check
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -43,21 +58,40 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: 3.11
+          cache: 'pip'
+
+      - name: Restore cached venv
+        id: restore-cache
+        uses: actions/cache/restore@v3
+        with:
+          path: ./.venv
+          key: ${{ runner.os }}-doc-venv-${{ hashFiles('**/pyproject.toml') }}
 
       - name: Install dependencies
-        run: pip install -e .[doc]
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        run: |
+          python -m venv .venv
+          ./.venv/bin/python -m pip install .[doc]
+
+      - name: Cache venv
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v3
+        with:
+          path: ./.venv
+          key: ${{ steps.restore-cache.outputs.cache-primary-key }}
 
       - name: Sphinx build
-        run: sphinx-build docs docs/_build --builder html --fresh-env
+        run: ./.venv/bin/sphinx-build docs docs/_build --builder html --fresh-env
 
       - name: Upload static files as artifact
         id: deployment
         uses: actions/upload-pages-artifact@v3
         with:
           path: docs/_build/
-  
-  deploy-doc:          
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+
+  deploy-docs:
+    if: github.event.pull_request.merged == true
+    # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     needs: build-docs
     runs-on: ubuntu-latest
     environment:
@@ -70,3 +104,76 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  package-test:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
+    needs: release-test
+    uses: ./.github/workflows/package_rwf.yml
+    permissions:
+      contents: read
+    with:
+      tag: "${{ needs.release-test.outputs.tag }}"
+      python-version: "3.11"
+      dist-artifact-prefix: "test"
+
+  deploy-test:
+    needs: package-test
+    runs-on: ubuntu-latest
+    environment:
+      name: test
+      url: https://test.pypi.org/p/cycl
+    permissions:
+      id-token: write   # needed for publishing to PyPI
+    steps:
+      - name: Download built distribution
+        uses: actions/download-artifact@v4
+        with:
+          name: "${{ needs.package-test.outputs.artifact-name }}"
+          path: dist/
+
+      - name: Publish distribution
+        uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc  # v1.12.4
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          verbose: true
+
+  release-prod:
+    if: github.event.pull_request.merged == true
+    needs: deploy-test
+    uses: ./.github/workflows/release_rwf.yml
+    permissions:
+      contents: write  # needed for tag creation
+    with:
+      pre-release: "false"
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}
+
+  package-prod:
+    if: github.event.pull_request.merged == true
+    needs: release-prod
+    uses: ./.github/workflows/package_rwf.yml
+    permissions:
+      contents: read
+    with:
+      tag: "${{ needs.release-prod.outputs.tag }}"
+      python-version: "3.11"
+      dist-artifact-prefix: "test"
+
+  deploy-prod:
+    if: github.event.pull_request.merged == true
+    needs: package-prod
+    runs-on: ubuntu-latest
+    environment:
+      name: prod
+      url: https://pypi.org/p/cycl
+    permissions:
+      id-token: write   # needed for publishing to PyPI
+    steps:
+      - name: Download built distribution
+        uses: actions/download-artifact@v4
+        with:
+          name: "${{ needs.package-prod.outputs.artifact-name }}"
+          path: dist/
+
+      - name: Publish distribution
+        uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc  # v1.12.4

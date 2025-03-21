@@ -24,6 +24,7 @@ share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+*.egg*
 MANIFEST
 
 # PyInstaller
@@ -189,3 +190,5 @@ docs_dist
 
 # pyenv
 .python-version
+venv
+.venv
