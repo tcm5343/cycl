@@ -157,7 +157,6 @@ jobs:
     with:
       tag: "${{ needs.release-prod.outputs.tag }}"
       python-version: "3.11"
-      dist-artifact-prefix: "test"
 
   deploy-prod:
     if: github.event.pull_request.merged == true
