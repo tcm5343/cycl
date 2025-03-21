@@ -109,6 +109,8 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
     needs: release-test
     uses: ./.github/workflows/package_rwf.yml
+    permissions:
+      contents: read
     with:
       tag: "${{ needs.release-test.outputs.tag }}"
       python-version: "3.11"
@@ -150,6 +152,8 @@ jobs:
     if: github.event.pull_request.merged == true
     needs: release-prod
     uses: ./.github/workflows/package_rwf.yml
+    permissions:
+      contents: read
     with:
       tag: "${{ needs.release-prod.outputs.tag }}"
       python-version: "3.11"
