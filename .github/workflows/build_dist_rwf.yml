@@ -12,9 +12,6 @@ on:
       dist-artifact-prefix:
         required: false
         type: string
-    secrets:
-      token:
-        required: true
     outputs:
       artifact-id:
         description: "Artifact ID of the distribution."
