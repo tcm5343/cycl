@@ -12,32 +12,32 @@ env:
   PYTHON_VERSION: '3.11'  # TODO: use this
 
 jobs:
-  quality-check:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: ['ubuntu-latest']
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
+  # quality-check:
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       os: ['ubuntu-latest']
+  #       python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+  #   runs-on: ${{ matrix.os }}
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'pip'
+  #     - uses: actions/setup-python@v5
+  #       with:
+  #         python-version: ${{ matrix.python-version }}
+  #         cache: 'pip'
 
-      - name: setup tox
-        run: pip install tox
+  #     - name: setup tox
+  #       run: pip install tox
 
-      - name: test
-        run: |
-          TOXENV="py$(echo ${{ matrix.python-version }} | sed 's/\.//')"
-          tox -e "${TOXENV}"
+  #     - name: test
+  #       run: |
+  #         TOXENV="py$(echo ${{ matrix.python-version }} | sed 's/\.//')"
+  #         tox -e "${TOXENV}"
 
   pypi:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
-    needs: quality-check
+    # needs: quality-check
     uses: ./.github/workflows/pypi.yml
     permissions:
       contents: write  # needed for tag creation

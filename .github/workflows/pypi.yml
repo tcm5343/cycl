@@ -12,7 +12,26 @@ on:
         required: true
 
 jobs:
+  vars:
+    runs-on: ubuntu-latest
+    outputs:
+      push_to_main: ${{ steps.set_env.outputs.push_to_main }}
+    steps:
+      - id: vars
+        run: |
+          push_to_main='false'
+          if [[ "${{ github.ref }}" == "refs/heads/${{ github.event.repository.default_branch }}" && "${{ github.event_name }}" == "push" ]]; then
+            echo "push_to_main=true" >> $GITHUB_OUTPUT
+          fi
+
   release:
+    if: |-
+      ${{
+        (github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        && github.event_name == 'push')
+        || github.event_name == 'workflow_dispatch'
+      }}
+    needs: vars
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.tag.outputs.new_tag }}
@@ -31,7 +50,7 @@ jobs:
           GIT_API_TAGGING: false
           GITHUB_TOKEN: ${{ secrets.token }}
           PRERELEASE_SUFFIX: b
-          PRERELEASE: ${{ github.event_name == 'workflow_dispatch' }}
+          PRERELEASE: ${{ needs.vars.outputs.push_to_main == 'false' }}
           WITH_V: true
 
       - name: Create release from tag
@@ -116,7 +135,7 @@ jobs:
   deploy-prod:
       if: |-
         ${{
-          github.ref == format('refs/heads/{0}', github.event.repository.default_branch)}}
+          github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
           && github.event_name == 'push'
         }}
       needs: deploy-test
