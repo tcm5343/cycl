@@ -28,23 +28,27 @@ jobs:
           fi
           echo $push_to_main
 
-  # release:
-  #   if: |-
-  #     ${{
-  #       (github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-  #       && github.event_name == 'push')
-  #       || github.event_name == 'workflow_dispatch'
-  #     }}
-  #   needs: vars
-  #   runs-on: ubuntu-latest
-  #   outputs:
-  #     tag: ${{ steps.tag.outputs.new_tag }}
-  #   permissions:
-  #     contents: write  # needed for tag creation
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #       with:
-  #         fetch-depth: '0'  # fetches tags
+  release:
+    # if: |-
+    #   ${{
+    #     (github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    #     && github.event_name == 'push')
+    #     || github.event_name == 'workflow_dispatch'
+    #   }}
+    needs: vars
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.new_tag }}
+    permissions:
+      contents: write  # needed for tag creation
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: '0'  # fetches tags
+      - id: vars
+        run: |
+          echo "${{ needs.vars.outputs.push_to_main }}"
+          echo "${{ needs.vars.outputs.push_to_main == 'false' }}"
 
   #     - name: Bump version and push tag
   #       id: tag
