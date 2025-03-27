@@ -13,6 +13,8 @@ on:
 
 jobs:
   vars:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     outputs:
       push_to_main: ${{ steps.set-vars.outputs.push_to_main }}
