@@ -15,18 +15,21 @@ jobs:
   vars:
     runs-on: ubuntu-latest
     outputs:
-      push_to_main: ${{ steps.v1.outputs.push_to_main }}
+      push_to_main: ${{ steps.set-vars.outputs.push_to_main }}
     steps:
-      - id: v1
+      - id: set-vars
         run: |
           push_to_main='false'
           echo "${{ github.ref }}"
           echo "refs/heads/${{ github.event.repository.default_branch }}"
           echo "${{ github.event_name }}"
+
           if [[ "${{ github.ref }}" == "refs/heads/${{ github.event.repository.default_branch }}" && "${{ github.event_name }}" == "push" ]]; then
-            echo "push_to_main=true" >> $GITHUB_OUTPUT
+            push_to_main='true'
           fi
+
           echo $push_to_main
+          echo "push_to_main=${push_to_main}" >> $GITHUB_OUTPUT
 
   release:
     # if: |-
@@ -45,10 +48,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: '0'  # fetches tags
+
       - id: vars
         run: |
-          echo "${{ needs.vars.outputs.push_to_main }}"
-          echo "${{ needs.vars.outputs.push_to_main == 'false' }}"
+          echo "Push to main output: ${{ needs.vars.outputs.push_to_main }}"
+          echo "Comparison result: ${{ needs.vars.outputs.push_to_main == 'false' }}"
 
   #     - name: Bump version and push tag
   #       id: tag
