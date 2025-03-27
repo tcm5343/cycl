@@ -126,6 +126,7 @@ jobs:
       url: https://test.pypi.org/p/cycl
     permissions:
       id-token: write   # needed for publishing to PyPI
+      contents: read
     steps:
       - name: Download built distribution
         uses: actions/download-artifact@v4
