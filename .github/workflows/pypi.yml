@@ -15,9 +15,9 @@ jobs:
   vars:
     runs-on: ubuntu-latest
     outputs:
-      push_to_main: ${{ steps.vars.outputs.push_to_main }}
+      push_to_main: ${{ steps.v1.outputs.push_to_main }}
     steps:
-      - id: vars
+      - id: v1
         run: |
           push_to_main='false'
           echo "${{ github.ref }}"
@@ -37,8 +37,8 @@ jobs:
     #   }}
     needs: vars
     runs-on: ubuntu-latest
-    outputs:
-      tag: ${{ steps.tag.outputs.new_tag }}
+    # outputs:
+    #   tag: ${{ steps.tag.outputs.new_tag }}
     permissions:
       contents: write  # needed for tag creation
     steps:
