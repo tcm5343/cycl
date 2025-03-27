@@ -15,7 +15,7 @@ jobs:
   vars:
     runs-on: ubuntu-latest
     outputs:
-      push_to_main: ${{ steps.set_env.outputs.push_to_main }}
+      push_to_main: ${{ steps.vars.outputs.push_to_main }}
     steps:
       - id: vars
         run: |
