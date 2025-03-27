@@ -42,8 +42,6 @@ jobs:
     permissions:
       contents: write  # needed for tag creation
       id-token: write   # needed for publishing to PyPI
-    with:
-      pre-release: "true"
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
 
