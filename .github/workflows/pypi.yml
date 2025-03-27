@@ -9,7 +9,7 @@ on:
         default: "3.11"
 
 jobs:
-  vars:
+  vars:  # TODO: move this out of RWF and into calling
     permissions:
       contents: read
     runs-on: ubuntu-latest

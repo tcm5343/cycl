@@ -12,32 +12,32 @@ env:
   PYTHON_VERSION: '3.11'  # TODO: use this
 
 jobs:
-  # quality-check:
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       os: ['ubuntu-latest']
-  #       python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
-  #   runs-on: ${{ matrix.os }}
-  #   steps:
-  #     - uses: actions/checkout@v4
+  quality-check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ['ubuntu-latest']
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
 
-  #     - uses: actions/setup-python@v5
-  #       with:
-  #         python-version: ${{ matrix.python-version }}
-  #         cache: 'pip'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
 
-  #     - name: setup tox
-  #       run: pip install tox
+      - name: setup tox
+        run: pip install tox
 
-  #     - name: test
-  #       run: |
-  #         TOXENV="py$(echo ${{ matrix.python-version }} | sed 's/\.//')"
-  #         tox -e "${TOXENV}"
+      - name: test
+        run: |
+          TOXENV="py$(echo ${{ matrix.python-version }} | sed 's/\.//')"
+          tox -e "${TOXENV}"
 
   pypi:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
-    # needs: quality-check
+    needs: quality-check
     uses: ./.github/workflows/pypi.yml
     permissions:
       contents: write  # needed for tag creation
@@ -45,82 +45,10 @@ jobs:
     secrets: inherit
 
   docs:
-    # needs: quality-check
+    needs: quality-check
     uses: ./.github/workflows/docs.yml
     permissions:
       contents: write
       pages: write      # to deploy to Pages
       id-token: write   # to verify the deployment originates from an appropriate source
     secrets: inherit
-
-  # package-test:
-  #   if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
-  #   needs: release-test
-  #   uses: ./.github/workflows/package_rwf.yml
-  #   permissions:
-  #     contents: read
-  #   with:
-  #     tag: "${{ needs.release-test.outputs.tag }}"
-  #     python-version: "3.11"
-  #     dist-artifact-prefix: "test"
-
-  # deploy-test:
-  #   needs: package-test
-  #   runs-on: ubuntu-latest
-  #   environment:
-  #     name: test
-  #     url: https://test.pypi.org/p/cycl
-  #   permissions:
-  #     id-token: write   # needed for publishing to PyPI
-  #   steps:
-  #     - name: Download built distribution
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: "${{ needs.package-test.outputs.artifact-name }}"
-  #         path: dist/
-
-  #     - name: Publish distribution
-  #       uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc  # v1.12.4
-  #       with:
-  #         repository-url: https://test.pypi.org/legacy/
-  #         verbose: true
-
-  # release-prod:
-  #   if: github.event.pull_request.merged == true
-  #   needs: deploy-test
-  #   uses: ./.github/workflows/release_rwf.yml
-  #   permissions:
-  #     contents: write  # needed for tag creation
-  #   with:
-  #     pre-release: "false"
-  #   secrets:
-  #     token: ${{ secrets.GITHUB_TOKEN }}
-
-  # package-prod:
-  #   if: github.event.pull_request.merged == true
-  #   needs: release-prod
-  #   uses: ./.github/workflows/package_rwf.yml
-  #   permissions:
-  #     contents: read
-  #   with:
-  #     tag: "${{ needs.release-prod.outputs.tag }}"
-  #     python-version: "3.11"
-
-  # deploy-prod:
-  #   if: github.event.pull_request.merged == true
-  #   needs: package-prod
-  #   runs-on: ubuntu-latest
-  #   environment:
-  #     name: prod
-  #     url: https://pypi.org/p/cycl
-  #   permissions:
-  #     id-token: write   # needed for publishing to PyPI
-  #   steps:
-  #     - name: Download built distribution
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: "${{ needs.package-prod.outputs.artifact-name }}"
-  #         path: dist/
-
-  #     - name: Publish distribution
-  #       uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc  # v1.12.4
