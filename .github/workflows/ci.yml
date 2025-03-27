@@ -42,8 +42,7 @@ jobs:
     permissions:
       contents: write  # needed for tag creation
       id-token: write   # needed for publishing to PyPI
-    secrets:
-      token: ${{ secrets.GITHUB_TOKEN }}
+    secrets: inherit
 
   # build-docs:
   #   needs: quality-check

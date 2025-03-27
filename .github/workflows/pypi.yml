@@ -7,9 +7,6 @@ on:
         required: false
         type: string
         default: "3.11"
-    secrets:
-      token:
-        required: true
 
 jobs:
   vars:
@@ -56,14 +53,14 @@ jobs:
         env:
           DEFAULT_BUMP: patch
           GIT_API_TAGGING: false
-          GITHUB_TOKEN: ${{ secrets.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PRERELEASE_SUFFIX: b
           PRERELEASE: ${{ needs.vars.outputs.push_to_main == 'false' }}
           WITH_V: true
 
       - name: Create release from tag
         env:
-          GITHUB_TOKEN: ${{ secrets.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ steps.tag.outputs.new_tag }}
         run: |
           gh release create "${tag}" \
@@ -125,7 +122,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: test
-      url: https://test.pypi.org/p/cycl
+      url: ${{ vars.PYPI_PROJECT_URL }}
     permissions:
       id-token: write   # needed for publishing to PyPI
       contents: read
@@ -139,8 +136,11 @@ jobs:
       - name: Publish distribution
         uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc  # v1.12.4
         with:
-          repository-url: https://test.pypi.org/legacy/
+          repository-url: ${{ vars.PYPI_REPOSITORY_URL }}
           verbose: true
+          # per issue, https://github.com/pypa/gh-action-pypi-publish/issues/166, reusable
+          # workflows are not supported for trusted publishing
+          password: ${{ secrets.PYPI_PASSWORD }}
 
   # deploy-prod:
   #     if: |-
