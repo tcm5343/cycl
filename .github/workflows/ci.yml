@@ -44,63 +44,14 @@ jobs:
       id-token: write   # needed for publishing to PyPI
     secrets: inherit
 
-  # build-docs:
-  #   needs: quality-check
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: write
-  #   steps:
-  #     - uses: actions/checkout@v4
-
-  #     - uses: actions/setup-python@v5
-  #       with:
-  #         python-version: 3.11
-  #         cache: 'pip'
-
-  #     - name: Restore cached venv
-  #       id: restore-cache
-  #       uses: actions/cache/restore@v3
-  #       with:
-  #         path: ./.venv
-  #         key: ${{ runner.os }}-doc-venv-${{ hashFiles('**/pyproject.toml') }}
-
-  #     - name: Install dependencies
-  #       if: steps.restore-cache.outputs.cache-hit != 'true'
-  #       run: |
-  #         python -m venv .venv
-  #         ./.venv/bin/python -m pip install .[doc]
-
-  #     - name: Cache venv
-  #       if: steps.restore-cache.outputs.cache-hit != 'true'
-  #       uses: actions/cache/save@v3
-  #       with:
-  #         path: ./.venv
-  #         key: ${{ steps.restore-cache.outputs.cache-primary-key }}
-
-  #     - name: Sphinx build
-  #       run: ./.venv/bin/sphinx-build docs docs/_build --builder html --fresh-env
-
-  #     - name: Upload static files as artifact
-  #       id: deployment
-  #       uses: actions/upload-pages-artifact@v3
-  #       with:
-  #         path: docs/_build/
-
-  # deploy-docs:
-  #   if: github.event.pull_request.merged == true
-  #   # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-  #   needs: build-docs
-  #   runs-on: ubuntu-latest
-  #   environment:
-  #     name: github-pages
-  #     url: ${{ steps.deployment.outputs.page_url }}
-  #   permissions:
-  #     pages: write      # to deploy to Pages
-  #     id-token: write   # to verify the deployment originates from an appropriate source
-  #   steps:
-  #     - name: Deploy to GitHub Pages
-  #       id: deployment
-  #       uses: actions/deploy-pages@v4
+  docs:
+    # needs: quality-check
+    uses: ./.github/workflows/docs.yml
+    permissions:
+      contents: write
+      pages: write      # to deploy to Pages
+      id-token: write   # to verify the deployment originates from an appropriate source
+    secrets: inherit
 
   # package-test:
   #   if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true

@@ -25,12 +25,12 @@ jobs:
           echo "push_to_main=${push_to_main}" >> $GITHUB_OUTPUT
 
   release:
-    # if: |-
-    #   ${{
-    #     (github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-    #     && github.event_name == 'push')
-    #     || github.event_name == 'workflow_dispatch'
-    #   }}
+    if: |-
+      ${{
+        (github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        && github.event_name == 'push')
+        || github.event_name == 'workflow_dispatch'
+      }}
     needs: vars
     runs-on: ubuntu-latest
     outputs:
@@ -141,27 +141,32 @@ jobs:
           # per issue, https://github.com/pypa/gh-action-pypi-publish/issues/166, reusable
           # workflows are not supported for trusted publishing
           password: ${{ secrets.PYPI_PASSWORD }}
+          attestations: "false"
 
-  # deploy-prod:
-  #     if: |-
-  #       ${{
-  #         github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-  #         && github.event_name == 'push'
-  #       }}
-  #     needs: deploy-test
-  #     runs-on: ubuntu-latest
-  #     environment:
-  #       name: prod
-  #       url: https://pypi.org/p/cycl
-  #     permissions:
-  #       id-token: write   # needed for publishing to PyPI
-  #     steps:
-  #       - name: Download built distribution
-  #         uses: actions/download-artifact@v4
-  #         with:
-  #           name: "${{ needs.package-prod.outputs.artifact-name }}"
-  #           path: dist/
+  deploy-prod:
+      if: |-
+        ${{
+          github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+          && github.event_name == 'push'
+        }}
+      needs: deploy-test
+      runs-on: ubuntu-latest
+      environment:
+        name: prod
+        url: ${{ vars.PYPI_PROJECT_URL }}
+      permissions:
+        id-token: write   # needed for publishing to PyPI
+      steps:
+        - name: Download built distribution
+          uses: actions/download-artifact@v4
+          with:
+            name: pypi-artifact
+            path: dist/
 
-  #       - name: Publish distribution
-  #         uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc  # v1.12.4
-
+        - name: Publish distribution
+          uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc  # v1.12.4
+          with:
+            # per issue, https://github.com/pypa/gh-action-pypi-publish/issues/166, reusable
+            # workflows are not supported for trusted publishing
+            password: ${{ secrets.PYPI_PASSWORD }}
+            attestations: "false"
