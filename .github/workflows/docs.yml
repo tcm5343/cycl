@@ -55,7 +55,7 @@ jobs:
           path: docs/_build/
 
   deploy:
-    if: ${{ inputs.deploy-prod }}
+    if: ${{ inputs.deploy-prod == 'true' }}
     needs: build
     runs-on: ubuntu-latest
     environment:
