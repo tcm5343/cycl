@@ -28,6 +28,7 @@ jobs:
           echo "is_push_to_main=${is_push_to_main}" >> $GITHUB_OUTPUT
 
   quality-check:
+    needs: vars
     strategy:
       fail-fast: false
       matrix:
