@@ -7,31 +7,14 @@ on:
         required: false
         type: string
         default: "3.11"
+      deploy-prod:
+        required: false
+        type: string
+        default: "false"
 
 jobs:
-  vars:  # TODO: move this out of RWF and into calling
-    permissions:
-      contents: read
-    runs-on: ubuntu-latest
-    outputs:
-      push_to_main: ${{ steps.set-vars.outputs.push_to_main }}
-    steps:
-      - id: set-vars
-        run: |
-          push_to_main='false'
-          if [[ "${{ github.ref }}" == "refs/heads/${{ github.event.repository.default_branch }}" && "${{ github.event_name }}" == "push" ]]; then
-            push_to_main='true'
-          fi
-          echo "push_to_main=${push_to_main}" >> $GITHUB_OUTPUT
-
   release:
-    if: |-
-      ${{
-        (github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-        && github.event_name == 'push')
-        || github.event_name == 'workflow_dispatch'
-      }}
-    needs: vars
+    if: ${{ inputs.deploy-prod == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.tag.outputs.new_tag }}
@@ -42,11 +25,6 @@ jobs:
         with:
           fetch-depth: '0'  # fetches tags
 
-      - id: vars
-        run: |
-          echo "Push to main output: ${{ needs.vars.outputs.push_to_main }}"
-          echo "Comparison result: ${{ needs.vars.outputs.push_to_main == 'false' }}"
-
       - name: Bump version and push tag
         id: tag
         uses: anothrNick/github-tag-action@f278d49d30cdd8775cc3e7dd00b5ee11686ee297  # v1.71.0
@@ -55,7 +33,7 @@ jobs:
           GIT_API_TAGGING: false
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PRERELEASE_SUFFIX: b
-          PRERELEASE: ${{ needs.vars.outputs.push_to_main == 'false' }}
+          PRERELEASE: ${{ inputs.deploy-prod == 'false' }}
           WITH_V: true
 
       - name: Create release from tag
@@ -117,7 +95,6 @@ jobs:
           retention-days: 7
 
   deploy-test:
-    # if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'push' }}
     needs: build
     runs-on: ubuntu-latest
     environment:
@@ -144,11 +121,7 @@ jobs:
           attestations: "false"
 
   deploy-prod:
-      if: |-
-        ${{
-          github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-          && github.event_name == 'push'
-        }}
+      if: ${{ inputs.deploy-prod == 'true' }}
       needs: deploy-test
       runs-on: ubuntu-latest
       environment:
