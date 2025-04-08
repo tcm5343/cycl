@@ -9,7 +9,6 @@ on:
 
 env:
   PYTHONPATH: './src:./test'
-  PYTHON_VERSION: '3.11'
 
 jobs:
   vars:
@@ -36,7 +35,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "${{ env.PYTHON_VERSION }}"
+          python-version: '3.11'
           cache: 'pip'
 
       - name: validate
@@ -78,7 +77,6 @@ jobs:
       id-token: write   # needed for publishing to PyPI
     with:
       deploy-prod: ${{ needs.vars.outputs.is_push_to_main == 'true' }}
-      python-version: "${{ env.PYTHON_VERSION }}"
 
   docs:
     needs: [vars, unit-tests]
@@ -90,4 +88,3 @@ jobs:
       id-token: write   # to verify the deployment originates from an appropriate source
     with:
       deploy-prod: ${{ needs.vars.outputs.is_push_to_main == 'true' }}
-      python-version: "${{ env.PYTHON_VERSION }}"
