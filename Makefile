@@ -1,10 +1,10 @@
 SHELL := /bin/bash
 .SHELLFLAGS = -ec
 .DEFAULT_GOAL = help
-.PHONY = help clean format test install-deps venv
+.PHONY = help clean format test format validate doc-serve install-dev-deps install-doc-deps install-validation-deps
 
 DEV_DEPS_CACHE := .venv/dev-deps.cache
-DOCS_DEPS_CACHE := .venv/docs-deps.cache
+DOC_DEPS_CACHE := .venv/docs-deps.cache
 VALIDATION_DEPS_CACHE := .venv/validation-deps.cache
 
 help:
@@ -22,16 +22,16 @@ $(DEV_DEPS_CACHE): pyproject.toml
 install-dev-deps: $(DEV_DEPS_CACHE)  ## Install development dependencies
 	@echo "Development deps have been installed..."
 
-$(DOCS_DEPS_CACHE): pyproject.toml
+$(DOC_DEPS_CACHE): pyproject.toml
 	@echo "Installing documenation dependencies..."
 	@test -d .venv || python3 -m venv .venv
 	@( \
 		source ./.venv/bin/activate; \
 		pip install --editable .[doc]; \
-		touch $(DOCS_DEPS_CACHE); \
+		touch $(DOC_DEPS_CACHE); \
 	)
 
-install-doc-deps: $(DOCS_DEPS_CACHE)  ## Install documentation dependencies
+install-doc-deps: $(DOC_DEPS_CACHE)  ## Install documentation dependencies
 	@echo "Documentation deps have been installed..."
 
 $(VALIDATION_DEPS_CACHE): pyproject.toml
@@ -53,7 +53,7 @@ format: install-dev-deps  ## Format the project
 		ruff check --fix; \
 	)
 
-validate: install-validation-deps  ## Validate the code quality checks
+validate: install-validation-deps  ## Run the code quality checks
 	@( \
 		source ./.venv/bin/activate; \
 		ruff format --check; \

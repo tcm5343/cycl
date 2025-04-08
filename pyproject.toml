@@ -140,6 +140,5 @@ allowlist_externals = ['make']
 package = 'editable'
 deps = ['.[dev]']
 commands = [
-    # ['make', 'validate'],
     ['make', 'test', 'ARGS={posargs}']
 ]
