@@ -5,6 +5,7 @@ SHELL := /bin/bash
 
 DEV_DEPS_CACHE := .venv/dev-deps.cache
 DOCS_DEPS_CACHE := .venv/docs-deps.cache
+VALIDATION_DEPS_CACHE := .venv/validation-deps.cache
 
 help:
 	@egrep -h '\s##\s' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m  %-30s\033[0m %s\n", $$1, $$2}'
@@ -33,6 +34,18 @@ $(DOCS_DEPS_CACHE): pyproject.toml
 install-doc-deps: $(DOCS_DEPS_CACHE)  ## Install documentation dependencies
 	@echo "Documentation deps have been installed..."
 
+$(VALIDATION_DEPS_CACHE): pyproject.toml
+	@echo "Installing documenation dependencies..."
+	@test -d .venv || python3 -m venv .venv
+	@( \
+		source ./.venv/bin/activate; \
+		pip install --editable .[validation]; \
+		touch $(VALIDATION_DEPS_CACHE); \
+	)
+
+install-validation-deps: $(VALIDATION_DEPS_CACHE)  ## Install code quality validation dependencies
+	@echo "Documentation deps have been installed..."
+
 format: install-dev-deps  ## Format the project
 	@( \
 		source ./.venv/bin/activate; \
@@ -40,7 +53,7 @@ format: install-dev-deps  ## Format the project
 		ruff check --fix; \
 	)
 
-validate: install-dev-deps  ## Validate the projects formatting
+validate: install-validation-deps  ## Validate the code quality checks
 	@( \
 		source ./.venv/bin/activate; \
 		ruff format --check; \
@@ -54,7 +67,7 @@ test: install-dev-deps  ## Run unit tests
 		export PYTHONPATH=./src/; \
 		pytest --cov=./src/ $(ARGS); \
 	)
-	
+
 doc-serve: install-doc-deps ## Serve the documentation locally
 	@( \
 		source ./.venv/bin/activate; \
