@@ -27,6 +27,7 @@ jobs:
           echo "is_push_to_main=${is_push_to_main}" >> $GITHUB_OUTPUT
 
   code-quality:
+    needs: vars
     permissions:
       contents: read
     runs-on: 'ubuntu-latest'
