@@ -67,10 +67,9 @@ jobs:
           TOXENV="py$(echo ${{ matrix.python-version }} | sed 's/\.//')"
           tox -e "${TOXENV}"
 
-  pypi:
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+  build:
     needs: [vars, unit-tests]
-    uses: ./.github/workflows/pypi.yml
+    uses: ./.github/workflows/build.yml
     secrets: inherit
     permissions:
       contents: write  # needed for tag creation
@@ -78,9 +77,10 @@ jobs:
     with:
       deploy-prod: ${{ needs.vars.outputs.is_push_to_main == 'true' }}
 
-  docs:
-    needs: [vars, unit-tests]
-    uses: ./.github/workflows/docs.yml
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+    needs: [vars, unit-tests, build]
+    uses: ./.github/workflows/deploy.yml
     secrets: inherit
     permissions:
       contents: write
