@@ -9,7 +9,6 @@ on:
 
 env:
   PYTHONPATH: './src:./test'
-  PYTHON_VERSION: '3.11'  # TODO: use this
 
 jobs:
   vars:
@@ -27,8 +26,23 @@ jobs:
           fi
           echo "is_push_to_main=${is_push_to_main}" >> $GITHUB_OUTPUT
 
-  quality-check:
-    needs: vars
+  code-quality:
+    permissions:
+      contents: read
+    runs-on: 'ubuntu-latest'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: validate
+        run: make validate
+
+  unit-tests:
+    needs: code-quality
     permissions:
       contents: read
     strategy:
@@ -55,7 +69,7 @@ jobs:
 
   pypi:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
-    needs: [vars, quality-check]
+    needs: [vars, unit-tests]
     uses: ./.github/workflows/pypi.yml
     secrets: inherit
     permissions:
@@ -65,7 +79,7 @@ jobs:
       deploy-prod: ${{ needs.vars.outputs.is_push_to_main == 'true' }}
 
   docs:
-    needs: [vars, quality-check]
+    needs: [vars, unit-tests]
     uses: ./.github/workflows/docs.yml
     secrets: inherit
     permissions:
