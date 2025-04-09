@@ -1,4 +1,4 @@
-name: Package Reusable Workflow
+name: build reusable workflow
 
 on:
   workflow_call:
@@ -13,6 +13,47 @@ on:
         default: "false"
 
 jobs:
+  doc:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+          cache: 'pip'
+
+      - name: Restore cached venv
+        id: restore-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ./.venv
+          key: ${{ runner.os }}-doc-venv-${{ hashFiles('**/pyproject.toml') }}
+
+      - name: Install dependencies
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        run: |
+          python -m venv .venv
+          ./.venv/bin/python -m pip install .[doc]
+
+      - name: Cache venv
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ./.venv
+          key: ${{ steps.restore-cache.outputs.cache-primary-key }}
+
+      - name: Sphinx build
+        run: ./.venv/bin/sphinx-build docs docs/_build --builder html --fresh-env
+
+      - name: Upload static files as artifact
+        id: deployment
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/_build/
+
   release:
     if: ${{ inputs.deploy-prod == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
@@ -46,7 +87,7 @@ jobs:
               --title="${tag#v}" \
               --generate-notes
 
-  build:
+  pypi:
     needs: release
     runs-on: ubuntu-latest
     permissions:
@@ -93,53 +134,3 @@ jobs:
           name: pypi-artifact
           path: dist/
           retention-days: 7
-
-  deploy-test:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: test
-      url: ${{ vars.PYPI_PROJECT_URL }}
-    permissions:
-      id-token: write   # needed for publishing to PyPI
-      contents: read
-    steps:
-      - name: Download built distribution
-        uses: actions/download-artifact@v4
-        with:
-          name: pypi-artifact
-          path: dist/
-
-      - name: Publish distribution
-        uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc  # v1.12.4
-        with:
-          repository-url: ${{ vars.PYPI_REPOSITORY_URL }}
-          verbose: true
-          # per issue, https://github.com/pypa/gh-action-pypi-publish/issues/166, reusable
-          # workflows are not supported for trusted publishing
-          password: ${{ secrets.PYPI_PASSWORD }}
-          attestations: "false"
-
-  deploy-prod:
-      if: ${{ inputs.deploy-prod == 'true' }}
-      needs: deploy-test
-      runs-on: ubuntu-latest
-      environment:
-        name: prod
-        url: ${{ vars.PYPI_PROJECT_URL }}
-      permissions:
-        id-token: write   # needed for publishing to PyPI
-      steps:
-        - name: Download built distribution
-          uses: actions/download-artifact@v4
-          with:
-            name: pypi-artifact
-            path: dist/
-
-        - name: Publish distribution
-          uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc  # v1.12.4
-          with:
-            # per issue, https://github.com/pypa/gh-action-pypi-publish/issues/166, reusable
-            # workflows are not supported for trusted publishing
-            password: ${{ secrets.PYPI_PASSWORD }}
-            attestations: "false"
