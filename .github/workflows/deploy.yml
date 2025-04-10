@@ -63,9 +63,8 @@ jobs:
           password: ${{ secrets.PYPI_PASSWORD }}
           attestations: "false"
 
-  docs:
+  doc:
     if: ${{ inputs.deploy-prod == 'true' }}
-    needs: pypi-test
     runs-on: ubuntu-latest
     environment:
       name: github-pages
