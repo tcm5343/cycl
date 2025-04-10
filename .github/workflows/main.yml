@@ -43,7 +43,7 @@ jobs:
         run: make validate
 
   unit-tests:
-    needs: code-quality
+    needs: vars
     permissions:
       contents: read
     strategy:
@@ -69,7 +69,7 @@ jobs:
           tox -e "${TOXENV}"
 
   build:
-    needs: [vars, unit-tests]
+    needs: [vars, code-quality, unit-tests]
     uses: ./.github/workflows/build.yml
     secrets: inherit
     permissions:
@@ -80,7 +80,7 @@ jobs:
 
   deploy:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
-    needs: [vars, unit-tests, build]
+    needs: [vars, build]
     uses: ./.github/workflows/deploy.yml
     secrets: inherit
     permissions:
