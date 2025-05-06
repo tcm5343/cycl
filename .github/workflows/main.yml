@@ -49,17 +49,17 @@ jobs:
           pip install -r requirements.txt -r requirements-dev.txt
           npm install -g aws-cdk
 
-      # - name: cdk synth acyclic
-      #   working-directory: e2e
-      #   run: cdk synth
+      - name: cdk synth
+        working-directory: e2e
+        run: cdk synth
 
       - name: cdk deploy
         working-directory: e2e
-        run: cdk deploy AcyclicStage/** --ci --require-approval never
+        run: cdk deploy --app cdk.out AcyclicStage/** --ci --require-approval never
 
       - name: cdk destroy
         working-directory: e2e
-        run: cdk destroy AcyclicStage/** --ci
+        run: cdk destroy AcyclicStage/** --ci --force
 
   # vars:
   #   permissions:
