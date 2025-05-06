@@ -22,8 +22,6 @@ jobs:
       contents: read  # This is required for actions/checkout
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref || github.ref_name }}
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -51,12 +49,17 @@ jobs:
           pip install -r requirements.txt -r requirements-dev.txt
           npm install -g aws-cdk
 
+      # - name: cdk synth acyclic
+      #   working-directory: e2e
+      #   run: cdk synth
 
-    # - name: cdk synth
-    #   run: npx --yes cdk synth
+      - name: cdk deploy
+        working-directory: e2e
+        run: cdk deploy AcyclicStage/** --ci --require-approval never
 
-    # - name: cdk deploy
-    #   run: npx --yes cdk deploy --require-approval never
+      - name: cdk destroy
+        working-directory: e2e
+        run: cdk destroy AcyclicStage/** --ci
 
   # vars:
   #   permissions:
