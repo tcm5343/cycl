@@ -12,7 +12,7 @@ on:
         description: If
 
 env:
-  PYTHONPATH: './src:./test'
+  PYTHONPATH: './src:./test:.'
 
 jobs:
   test:
