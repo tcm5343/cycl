@@ -36,12 +36,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 'latest'
-
-      - name: print
-        run: |
-          pwd
-          ls
+          node-version: '22'
 
       - name: Install Python dependencies and CDK
         working-directory: e2e
@@ -49,17 +44,43 @@ jobs:
           pip install -r requirements.txt -r requirements-dev.txt
           npm install -g aws-cdk
 
-      # - name: cdk synth
-      #   working-directory: e2e
-      #   run: cdk synth
+      - name: cdk synth (init stacks)
+        working-directory: e2e
+        run: cdk synth --output cdk.out
 
       - name: cdk deploy
         working-directory: e2e
-        run: cdk deploy AcyclicStage/** --ci --require-approval never
+        run: |
+          cdk deploy --app cdk.out CyclicStage/** --ci --require-approval never
+          cdk deploy --app cdk.out AcyclicStage/** --ci --require-approval never
+
+      - name: cdk synth (introduce cycle)
+        working-directory: e2e
+        run: cdk synth --output cdk.out -c create_cycle=true
+
+      - name: cdk deploy
+        working-directory: e2e
+        run: |
+          cdk deploy --app cdk.out CyclicStage/** --ci --require-approval never
+          cdk deploy --app cdk.out AcyclicStage/** --ci --require-approval never
+
+      # run tests here
+
+      - name: cdk synth (remove cycle so stacks can be tore down )
+        working-directory: e2e
+        run: cdk synth --output cdk.out
+
+      - name: cdk deploy
+        working-directory: e2e
+        run: |
+          cdk deploy --app cdk.out CyclicStage/** --ci --require-approval never
+          cdk deploy --app cdk.out AcyclicStage/** --ci --require-approval never
 
       - name: cdk destroy
         working-directory: e2e
-        run: cdk destroy AcyclicStage/** --ci --force
+        run: |
+          cdk destroy CyclicStage/** --ci --force
+          cdk destroy AcyclicStage/** --ci --force
 
   # vars:
   #   permissions:
