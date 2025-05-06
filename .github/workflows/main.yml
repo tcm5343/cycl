@@ -11,6 +11,39 @@ env:
   PYTHONPATH: './src:./test'
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+    # - uses: actions/checkout@v3
+
+    # - name: Set up node 18
+    #   uses: actions/setup-node@v3
+    #   with:
+    #     node-version: 18
+    #     cache: npm
+
+    # - name: npm install
+    #   run: npm install
+
+    # - name: npm tests
+    #   run: npm tests
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::929185124050:role/github-deployment-role
+          role-session-name: github-actions-deployment
+
+    # - name: cdk synth
+    #   run: npx --yes cdk synth
+
+    # - name: cdk deploy
+    #   run: npx --yes cdk deploy --require-approval never
+
   vars:
     permissions:
       contents: read
