@@ -38,8 +38,13 @@ jobs:
         with:
           node-version: 'latest'
 
+      - name: print
+        run: |
+          pwd
+          ls
+
       - name: Install Python dependencies and CDK
-        working-directory: ./e2e
+        working-directory: e2e
         run: |
           pip install -r requirements.txt -r requirements-dev.txt
           npm install -g aws-cdk
