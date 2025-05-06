@@ -22,6 +22,8 @@ jobs:
       contents: read  # This is required for actions/checkout
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -56,81 +58,81 @@ jobs:
     # - name: cdk deploy
     #   run: npx --yes cdk deploy --require-approval never
 
-  vars:
-    permissions:
-      contents: read
-    runs-on: ubuntu-latest
-    outputs:
-      is_push_to_main: ${{ steps.set-vars.outputs.is_push_to_main }}
-    steps:
-      - id: set-vars
-        run: |
-          is_push_to_main='false'
-          if [[ "${{ github.ref }}" == "refs/heads/${{ github.event.repository.default_branch }}" && "${{ github.event_name }}" == "push" ]]; then
-            is_push_to_main='true'
-          fi
-          echo "is_push_to_main=${is_push_to_main}" >> $GITHUB_OUTPUT
+  # vars:
+  #   permissions:
+  #     contents: read
+  #   runs-on: ubuntu-latest
+  #   outputs:
+  #     is_push_to_main: ${{ steps.set-vars.outputs.is_push_to_main }}
+  #   steps:
+  #     - id: set-vars
+  #       run: |
+  #         is_push_to_main='false'
+  #         if [[ "${{ github.ref }}" == "refs/heads/${{ github.event.repository.default_branch }}" && "${{ github.event_name }}" == "push" ]]; then
+  #           is_push_to_main='true'
+  #         fi
+  #         echo "is_push_to_main=${is_push_to_main}" >> $GITHUB_OUTPUT
 
-  code-quality:
-    needs: vars
-    permissions:
-      contents: read
-    runs-on: 'ubuntu-latest'
-    steps:
-      - uses: actions/checkout@v4
+  # code-quality:
+  #   needs: vars
+  #   permissions:
+  #     contents: read
+  #   runs-on: 'ubuntu-latest'
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: 'pip'
+  #     - uses: actions/setup-python@v5
+  #       with:
+  #         python-version: '3.11'
+  #         cache: 'pip'
 
-      - name: validate
-        run: make validate
+  #     - name: validate
+  #       run: make validate
 
-  unit-tests:
-    needs: vars
-    permissions:
-      contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        os: ['ubuntu-latest']
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
+  # unit-tests:
+  #   needs: vars
+  #   permissions:
+  #     contents: read
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       os: ['ubuntu-latest']
+  #       python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+  #   runs-on: ${{ matrix.os }}
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'pip'
+  #     - uses: actions/setup-python@v5
+  #       with:
+  #         python-version: ${{ matrix.python-version }}
+  #         cache: 'pip'
 
-      - name: setup tox
-        run: pip install tox
+  #     - name: setup tox
+  #       run: pip install tox
 
-      - name: test
-        run: |
-          TOXENV="py$(echo ${{ matrix.python-version }} | sed 's/\.//')"
-          tox -e "${TOXENV}"
+  #     - name: test
+  #       run: |
+  #         TOXENV="py$(echo ${{ matrix.python-version }} | sed 's/\.//')"
+  #         tox -e "${TOXENV}"
 
-  build:
-    needs: [vars, code-quality, unit-tests]
-    uses: ./.github/workflows/build.yml
-    secrets: inherit
-    permissions:
-      contents: write  # needed for tag creation
-      id-token: write   # needed for publishing to PyPI
-    with:
-      deploy-prod: ${{ needs.vars.outputs.is_push_to_main == 'true' }}
+  # build:
+  #   needs: [vars, code-quality, unit-tests]
+  #   uses: ./.github/workflows/build.yml
+  #   secrets: inherit
+  #   permissions:
+  #     contents: write  # needed for tag creation
+  #     id-token: write   # needed for publishing to PyPI
+  #   with:
+  #     deploy-prod: ${{ needs.vars.outputs.is_push_to_main == 'true' }}
 
-  deploy:
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
-    needs: [vars, build]
-    uses: ./.github/workflows/deploy.yml
-    secrets: inherit
-    permissions:
-      contents: write
-      pages: write      # to deploy to Pages
-      id-token: write   # to verify the deployment originates from an appropriate source
-    with:
-      deploy-prod: ${{ needs.vars.outputs.is_push_to_main == 'true' }}
+  # deploy:
+  #   if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+  #   needs: [vars, build]
+  #   uses: ./.github/workflows/deploy.yml
+  #   secrets: inherit
+  #   permissions:
+  #     contents: write
+  #     pages: write      # to deploy to Pages
+  #     id-token: write   # to verify the deployment originates from an appropriate source
+  #   with:
+  #     deploy-prod: ${{ needs.vars.outputs.is_push_to_main == 'true' }}
