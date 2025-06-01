@@ -43,7 +43,7 @@ test = [
 ]
 validation = [
     'boto3-stubs[essential]==1.38.9',
-    'mypy==1.15.0',
+    'mypy==1.16.0',
     'ruff==0.11.8',
     'types-networkx==3.4.2.20250426',
 ]
