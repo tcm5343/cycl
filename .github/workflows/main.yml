@@ -23,12 +23,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-region: us-east-1
-          role-to-assume: arn:aws:iam::929185124050:role/github-deployment-role
-          role-session-name: github-actions-deployment
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -41,46 +35,23 @@ jobs:
       - name: Install Python dependencies and CDK
         working-directory: e2e
         run: |
-          pip install -r requirements.txt -r requirements-dev.txt
+          pip install .[e2e]
           npm install -g aws-cdk
 
-      - name: cdk synth (init stacks)
-        working-directory: e2e
-        run: cdk synth --output cdk.out
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::929185124050:role/github-deployment-role
+          role-session-name: github-actions-deployment
 
-      - name: cdk deploy
-        working-directory: e2e
-        run: |
-          cdk deploy --app cdk.out CyclicStage/** --ci --require-approval never
-          cdk deploy --app cdk.out AcyclicStage/** --ci --require-approval never
+      - name: Deploy infra
+        run: make deploy-e2e-infra
 
-      - name: cdk synth (introduce cycle)
-        working-directory: e2e
-        run: cdk synth --output cdk.out -c create_cycle=true
+      - name: Run e2e
+        run: make run-e2e
 
-      - name: cdk deploy
-        working-directory: e2e
-        run: |
-          cdk deploy --app cdk.out CyclicStage/** --ci --require-approval never
-          cdk deploy --app cdk.out AcyclicStage/** --ci --require-approval never
-
-      # run tests here
-
-      - name: cdk synth (remove cycle so stacks can be tore down )
-        working-directory: e2e
-        run: cdk synth --output cdk.out
-
-      - name: cdk deploy
-        working-directory: e2e
-        run: |
-          cdk deploy --app cdk.out CyclicStage/** --ci --require-approval never
-          cdk deploy --app cdk.out AcyclicStage/** --ci --require-approval never
-
-      - name: cdk destroy
-        working-directory: e2e
-        run: |
-          cdk destroy CyclicStage/** --ci --force
-          cdk destroy AcyclicStage/** --ci --force
+      - name: Destroy infra
+        run: make destroy-e2e-infra
 
   # vars:
   #   permissions:

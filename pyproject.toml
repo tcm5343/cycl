@@ -58,6 +58,11 @@ dist = [
     'build==1.2.2.post1',
     'twine==6.1.0',  # not used in pipeline
 ]
+e2e = [
+    'pytest==6.2.5',
+    'aws-cdk-lib==2.172.0',
+    'constructs>=10.0.0,<11.0.0',
+]
 
 [project.urls]
 Repository = 'http://github.com/tcm5343/cycl'
