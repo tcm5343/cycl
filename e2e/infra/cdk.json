@@ -1,5 +1,5 @@
 {
-  "app": "python3 ./infra/app/app.py",
+  "app": "python3 ./app/app.py",
   "watch": {
     "include": [
       "**"
