@@ -14,12 +14,14 @@ class BootstrapE2EStack(Stack):
 
         github_repo_name = 'tcm5343/cycl'  # can this be dynamic?
         oidc_provider = iam.OpenIdConnectProvider.from_open_id_connect_provider_arn(
-            self, 'GitHubOIDCProvider',
-            open_id_connect_provider_arn=f'arn:aws:iam::{env.account}:oidc-provider/token.actions.githubusercontent.com'
+            self,
+            'GitHubOIDCProvider',
+            open_id_connect_provider_arn=f'arn:aws:iam::{env.account}:oidc-provider/token.actions.githubusercontent.com',
         )
 
         e2e_managed_policy = iam.ManagedPolicy(
-            self, 'e2eManagedPolicy',
+            self,
+            'e2eManagedPolicy',
             managed_policy_name='e2e-role-policy',
             statements=[
                 iam.PolicyStatement(
@@ -34,7 +36,8 @@ class BootstrapE2EStack(Stack):
         )
 
         role = iam.Role(
-            self, 'e2eTestingRole',
+            self,
+            'e2eTestingRole',
             role_name='e2e-testing-role',
             assumed_by=iam.WebIdentityPrincipal(
                 oidc_provider.open_id_connect_provider_arn,
