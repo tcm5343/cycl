@@ -145,5 +145,5 @@ allowlist_externals = ['make']
 package = 'editable'
 deps = ['.[test]']
 commands = [
-    ['make', 'test', 'ARGS= tests', 'ARGS={posargs}']
+    ['make', 'test', 'ARGS= ./tests', 'ARGS={posargs}']
 ]
