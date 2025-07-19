@@ -116,6 +116,7 @@ build-e2e-infra: install-e2e-deps  ## Deploy the infrastructure needed for E2E t
 		cdk synth --output cdk.out; \
 		cdk deploy --app cdk.out CyclicStage/** --ci --require-approval never; \
 		cdk deploy --app cdk.out AcyclicStage/** --ci --require-approval never; \
+		cdk deploy --app cdk.out BootstrapE2EStack --ci --require-approval never; \
 		\
 		rm -rf ./cdk.out; \
 		cdk synth --output cdk.out -c create_cycle=true; \
@@ -132,6 +133,7 @@ destroy-e2e-infra: install-e2e-deps  ## Destroy the infrastructure for E2E testi
 		cdk synth --output cdk.out; \
 		cdk deploy --app cdk.out CyclicStage/** --ci --require-approval never; \
 		cdk deploy --app cdk.out AcyclicStage/** --ci --require-approval never; \
+		cdk deploy --app cdk.out BootstrapE2EStack --ci --require-approval never; \
 		\
 		cdk destroy CyclicStage/** --ci --force; \
 		cdk destroy AcyclicStage/** --ci --force; \
