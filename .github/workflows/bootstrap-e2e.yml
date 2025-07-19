@@ -1,4 +1,4 @@
-name: Bootstrap E2E
+name: bootstrap-e2e
 
 on:
   workflow_dispatch:
