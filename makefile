@@ -3,10 +3,16 @@ SHELL := /bin/bash
 .DEFAULT_GOAL = help
 .PHONY = help clean format test format validate doc-serve install-test-deps install-doc-deps install-validation-deps build-e2e-infra destroy-e2e-infra
 
+export CDK_DISABLE_CLI_TELEMETRY = true
+export PIP_DISABLE_PIP_VERSION_CHECK = true
+
 TEST_DEPS_CACHE := .venv/test-deps.cache
 DOC_DEPS_CACHE := .venv/docs-deps.cache
 VALIDATION_DEPS_CACHE := .venv/validation-deps.cache
 E2E_DEPS_CACHE := .venv/e2e-deps.cache
+
+BRANCH_NAME := $(shell git rev-parse --abbrev-ref HEAD)
+REPO_NAME := $(shell basename -s .git `git config --get remote.origin.url`)
 
 help:
 	@egrep -h '\s##\s' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m  %-30s\033[0m %s\n", $$1, $$2}'
@@ -104,7 +110,7 @@ build-e2e-infra: install-e2e-deps  ## Deploy the infrastructure needed for E2E t
 	@( \
 		source ./.venv/bin/activate; \
 		pushd e2e/infra; \
-		export PYTHONPATH=$PYTHONPATH:.; \
+		export PYTHONPATH=.; \
 		\
 		rm -rf ./cdk.out; \
 		cdk synth --output cdk.out; \
