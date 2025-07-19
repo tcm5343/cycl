@@ -1,7 +1,7 @@
 from aws_cdk import Stage, Environment
 from constructs import Construct
 
-from infra.stack.acyclic_stack import AcyclicStack
+from stack.acyclic_stack import AcyclicStack
 
 
 class AcyclicStage(Stage):

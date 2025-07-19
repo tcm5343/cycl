@@ -43,7 +43,7 @@ jobs:
           role-session-name: github-actions-deployment
 
       - name: Deploy infra
-        run: make deploy-e2e-infra
+        run: make build-e2e-infra
 
       - name: Run e2e
         run: make run-e2e

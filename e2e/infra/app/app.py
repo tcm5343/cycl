@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 from aws_cdk import App, Environment
 
-from infra.stage.acyclic_stage import AcyclicStage
-from infra.stage.cyclic_stage import CyclicStage
+from stage.acyclic_stage import AcyclicStage
+from stage.cyclic_stage import CyclicStage
 
 ACCOUNT_NUMBER = '929185124050'
 

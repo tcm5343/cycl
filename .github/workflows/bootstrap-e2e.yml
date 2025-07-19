@@ -41,7 +41,7 @@ jobs:
 
       - name: Build E2E
         if: ${{ github.event.inputs.action == 'build' }}
-        run: make deploy-e2e-infra
+        run: make build-e2e-infra
 
       - name: Destroy E2E
         if: ${{ github.event.inputs.action == 'destroy' }}

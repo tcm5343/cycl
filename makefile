@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 .SHELLFLAGS = -ec
 .DEFAULT_GOAL = help
-.PHONY = help clean format test format validate doc-serve install-test-deps install-doc-deps install-validation-deps deploy-e2e-infra destroy-e2e-infra
+.PHONY = help clean format test format validate doc-serve install-test-deps install-doc-deps install-validation-deps build-e2e-infra destroy-e2e-infra
 
 TEST_DEPS_CACHE := .venv/test-deps.cache
 DOC_DEPS_CACHE := .venv/docs-deps.cache
@@ -100,10 +100,11 @@ clean:  ## Clean generated project files
 	@rm -rf ./docs/_build
 	@find . -type d -name "__pycache__" -exec rm -rf {} +
 
-deploy-e2e-infra: install-e2e-deps  ## Deploy the infrastructure needed for E2E testing in AWS
+build-e2e-infra: install-e2e-deps  ## Deploy the infrastructure needed for E2E testing in AWS
 	@( \
 		source ./.venv/bin/activate; \
-		pushd e2e; \
+		pushd e2e/infra; \
+		export PYTHONPATH=$PYTHONPATH:.; \
 		\
 		rm -rf ./cdk.out; \
 		cdk synth --output cdk.out; \

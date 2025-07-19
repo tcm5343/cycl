@@ -1,8 +1,8 @@
 from aws_cdk import Stage, Environment
 from constructs import Construct
 
-from infra.stack.cyclic_stack_a import CyclicStackA
-from infra.stack.cyclic_stack_b import CyclicStackB
+from stack.cyclic_stack_a import CyclicStackA
+from stack.cyclic_stack_b import CyclicStackB
 
 
 class CyclicStage(Stage):
