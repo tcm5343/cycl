@@ -58,6 +58,11 @@ dist = [
     'build==1.2.2.post1',
     'twine==6.1.0',  # not used in pipeline
 ]
+e2e = [
+    'pytest==6.2.5',
+    'aws-cdk-lib==2.172.0',
+    'constructs>=10.0.0,<11.0.0',
+]
 
 [project.urls]
 Repository = 'http://github.com/tcm5343/cycl'
@@ -90,7 +95,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-'tests/**' = [
+'**/tests/**' = [
     'ANN',      # flake8-annotations
     'PLR2004',  # magic-value-comparison
     'S101',     # assert
@@ -98,6 +103,12 @@ ignore = [
 'docs/**' = [
     'INP001',   # implicit-namespace-package
     'A001',     # builtin-variable-shadowing
+]
+'e2e/tests/**' = [
+    'S603',     # subprocess-without-shell-equals-true - needed to invoke cycl CLI
+]
+'e2e/infra/stage/**' = [
+    'A002',     # builtin-argument-shadowing - id is the keyword argument
 ]
 '__init__.py' = [
     'F401',     # unused-import
@@ -140,5 +151,5 @@ allowlist_externals = ['make']
 package = 'editable'
 deps = ['.[test]']
 commands = [
-    ['make', 'test', 'ARGS={posargs}']
+    ['make', 'test', 'ARGS={posargs} tests']
 ]

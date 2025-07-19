@@ -1,4 +1,4 @@
-name: Bootstrap E2E
+name: bootstrap-e2e
 
 on:
   workflow_dispatch:
@@ -12,11 +12,13 @@ on:
           - destroy
 
 jobs:
-  test:
+  bootstrap:
     runs-on: ubuntu-latest
+    environment:
+      name: aws
     permissions:
-    #   id-token: write # This is required for requesting the JWT
-      contents: read  # This is required for actions/checkout
+      id-token: write # configure-aws-credentials
+      contents: read  # checkout
     steps:
       - uses: actions/checkout@v4
 
@@ -41,7 +43,7 @@ jobs:
 
       - name: Build E2E
         if: ${{ github.event.inputs.action == 'build' }}
-        run: make deploy-e2e-infra
+        run: make build-e2e-infra
 
       - name: Destroy E2E
         if: ${{ github.event.inputs.action == 'destroy' }}

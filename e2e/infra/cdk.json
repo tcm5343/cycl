@@ -1,0 +1,7 @@
+{
+  "app": "python3 ./bin/app.py",
+  "context": {
+    "accountId": "929185124050",
+    "cli-telemetry": false
+  }
+}

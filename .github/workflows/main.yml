@@ -6,9 +6,13 @@ on:
     branches: ['main']
   push:
   workflow_dispatch:
+    inputs:
+      deploy-e2e-infra:
+        type: boolean
+        description: If
 
 env:
-  PYTHONPATH: './src:./test'
+  PYTHONPATH: './src:./test:.'
 
 jobs:
   vars:
@@ -89,3 +93,34 @@ jobs:
       id-token: write   # to verify the deployment originates from an appropriate source
     with:
       deploy-prod: ${{ needs.vars.outputs.is_push_to_main == 'true' }}
+
+
+  # e2e-test:
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     id-token: write # This is required for requesting the JWT
+  #     contents: read  # This is required for actions/checkout
+  #   steps:
+  #     - uses: actions/checkout@v4
+
+  #     - uses: actions/setup-python@v5
+  #       with:
+  #         python-version: "3.11"
+  #         cache: 'pip'
+
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: '22'
+
+  #     - name: Install Python dependencies and CDK
+  #       run: |
+  #         npm install -g aws-cdk
+
+  #     - uses: aws-actions/configure-aws-credentials@v4
+  #       with:
+  #         aws-region: us-east-1
+  #         role-to-assume: arn:aws:iam::929185124050:role/e2e-role
+  #         role-session-name: e2e-testing-role
+
+  #     - name: Run e2e
+  #       run: make run-e2e
