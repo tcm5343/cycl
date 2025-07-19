@@ -99,7 +99,7 @@ clean:  ## Clean generated project files
 	@rm -rf ./.ruff_cache
 	@rm -rf ./.pytest_cache
 	@rm -rf ./.venv
-	@rm -rf ./.venv
+	@rm -rf ./build
 	@rm -rf ./.tox
 	@rm -rf ./dist
 	@rm -rf ./.mypy_cache
