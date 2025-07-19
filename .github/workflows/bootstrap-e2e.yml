@@ -1,0 +1,48 @@
+name: Bootstrap E2E
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Build or destroy E2E testing resources"
+        required: true
+        type: choice
+        options:
+          - build
+          - destroy
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+    #   id-token: write # This is required for requesting the JWT
+      contents: read  # This is required for actions/checkout
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: 'pip'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Python dependencies and CDK
+        run: |
+          npm install -g aws-cdk
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::929185124050:role/github-deployment-role
+          role-session-name: github-actions-e2e-bootstrap
+
+      - name: Build E2E
+        if: ${{ github.event.inputs.action == 'build' }}
+        run: make deploy-e2e-infra
+
+      - name: Destroy E2E
+        if: ${{ github.event.inputs.action == 'destroy' }}
+        run: make destroy-e2e-infra
