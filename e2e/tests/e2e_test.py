@@ -56,3 +56,6 @@ def test_acyclic_region(monkeypatch):
 
     # get this to run from the makefile
     # can i combine down to a single stage?
+    # create a role specifically for integration testing
+    # always run the destroy infra step
+    # run integration tests for change, beta version, and prod version
