@@ -37,7 +37,7 @@ enabled = true
 [project.optional-dependencies]
 test = [
     'pytest-cov==6.2.1',
-    'pytest-subtests==0.14.1',
+    'pytest-subtests==0.14.2',
     'pytest-sugar==1.0.0',
     'pytest==8.3.5',
 ]
