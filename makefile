@@ -127,16 +127,17 @@ build-e2e-infra: install-e2e-deps  ## Deploy the infrastructure needed for E2E t
 destroy-e2e-infra: install-e2e-deps  ## Destroy the infrastructure for E2E testing in AWS, removing cycles and then stacks
 	@( \
 		source ./.venv/bin/activate; \
-		pushd e2e; \
+		pushd e2e/infra; \
+		export PYTHONPATH=.; \
 		\
 		rm -rf ./cdk.out; \
 		cdk synth --output cdk.out; \
 		cdk deploy --app cdk.out CyclicStage/** --ci --require-approval never; \
 		cdk deploy --app cdk.out AcyclicStage/** --ci --require-approval never; \
-		cdk deploy --app cdk.out BootstrapE2EStack --ci --require-approval never; \
 		\
 		cdk destroy CyclicStage/** --ci --force; \
 		cdk destroy AcyclicStage/** --ci --force; \
+		cdk destroy BootstrapE2EStack --ci --force; \
 	)
 
 run-e2e: install-e2e-deps  ## Run E2E tests
