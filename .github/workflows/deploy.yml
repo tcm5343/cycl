@@ -24,7 +24,7 @@ jobs:
       contents: read
     steps:
       - name: Download built distribution
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: pypi-artifact
           path: dist/
@@ -50,7 +50,7 @@ jobs:
       id-token: write   # needed for publishing to PyPI
     steps:
       - name: Download built distribution
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: pypi-artifact
           path: dist/

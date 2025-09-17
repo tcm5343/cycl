@@ -29,7 +29,7 @@ jobs:
       contents: read
     runs-on: 'ubuntu-latest'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: actions/setup-python@v5
         with:
@@ -50,7 +50,7 @@ jobs:
         python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: actions/setup-python@v5
         with:
@@ -94,7 +94,7 @@ jobs:
   #     id-token: write # This is required for requesting the JWT
   #     contents: read  # This is required for actions/checkout
   #   steps:
-  #     - uses: actions/checkout@v4
+  #     - uses: actions/checkout@v5
 
   #     - uses: actions/setup-python@v5
   #       with:
