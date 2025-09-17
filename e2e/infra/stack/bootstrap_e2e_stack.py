@@ -14,7 +14,9 @@ class BootstrapE2EStack(Stack):
 
         github_repo_name = 'tcm5343/cycl'  # can this be dynamic?
         oidc_provider = iam.OpenIdConnectProvider.from_open_id_connect_provider_arn(
-            self, 'GitHubOIDCProvider', f'arn:aws:iam::{env.account}:oidc-provider/token.actions.githubusercontent.com'
+            self,
+            'GitHubOIDCProvider',
+            open_id_connect_provider_arn=f'arn:aws:iam::{env.account}:oidc-provider/token.actions.githubusercontent.com',
         )
 
         e2e_managed_policy = iam.ManagedPolicy(
