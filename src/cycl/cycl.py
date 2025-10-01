@@ -33,9 +33,9 @@ def get_graph_data(
     # profile and session should not be able to be provided
     boto_config = Config(retries={'max_attempts': 10, 'mode': 'adaptive'})
     if aws_session:
-        cfn_client = aws_session.client('cloudformation', config=boto_config)
+        cfn_client = aws_session.client('cloudformation', config=boto_config)  # type: ignore[attr-defined]
     elif aws_profile_name:
-        cfn_client = Session(profile_name=aws_profile_name).client('cloudformation', config=boto_config)
+        cfn_client = Session(profile_name=aws_profile_name).client('cloudformation', config=boto_config)  # type: ignore[attr-defined,call-arg]
     else:
         cfn_client = boto3.client('cloudformation', config=boto_config)
 
