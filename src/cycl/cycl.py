@@ -2,23 +2,42 @@ from __future__ import annotations
 
 from logging import getLogger
 from pathlib import Path
+from typing import TYPE_CHECKING, Callable
 
 import boto3
 import networkx as nx
 from botocore.config import Config
+from botocore.session import Session
 
 from cycl.models.export_data import ExportData
 from cycl.utils.cdk import get_exports_from_assembly
 
+if TYPE_CHECKING:
+    from collections.abc import Hashable
+
+
 log = getLogger(__name__)
 
 
-def get_graph_data(cdk_out_path: Path | None = None) -> dict[str, ExportData]:
-    cdk_out_imports: dict[str, list[ExportData]] = get_exports_from_assembly(Path(cdk_out_path)) if cdk_out_path else {}
+def get_graph_data(
+    cdk_out_path: Path | None = None,
+    aws_session: Session | None = None,
+    aws_profile_name: str | None = None,
+) -> dict[str, ExportData]:
+    cdk_out_imports: dict[str, list[ExportData]] = (
+        get_exports_from_assembly(Path(cdk_out_path)) if cdk_out_path is not None else {}
+    )
     log.info('cdk_out_imports: %s', cdk_out_imports)
 
+    # this logic should move to a module
+    # profile and session should not be able to be provided
     boto_config = Config(retries={'max_attempts': 10, 'mode': 'adaptive'})
-    cfn_client = boto3.client('cloudformation', config=boto_config)
+    if aws_session:
+        cfn_client = aws_session.client('cloudformation', config=boto_config)
+    elif aws_profile_name:
+        cfn_client = Session(profile_name=aws_profile_name).client('cloudformation', config=boto_config)
+    else:
+        cfn_client = boto3.client('cloudformation', config=boto_config)
 
     log.info('getting all exports')
     exports = ExportData.get_all_exports(cfn_client=cfn_client)
@@ -40,29 +59,37 @@ def get_graph_data(cdk_out_path: Path | None = None) -> dict[str, ExportData]:
     return exports
 
 
-def build_graph(
+def build_graph(  # noqa: PLR0913
     graph_data: dict[str, ExportData] | None = None,
     cdk_out_path: Path | None = None,
-    # node_key: Callable[[ExportData], str] = lambda x: x.stack_name,
+    node_key_fn: Callable[[ExportData], Hashable] = lambda x: x.stack_name,
     nodes_to_ignore: list[str] | None = None,
     edges_to_ignore: list[list[str]] | None = None,
+    aws_session: Session | None = None,
+    aws_profile_name: str | None = None,
+    *,
+    remove_selfloops: bool = False,
 ) -> nx.MultiDiGraph:
     nodes_to_ignore = nodes_to_ignore or []
     edges_to_ignore = edges_to_ignore or []
-    graph_data = get_graph_data(cdk_out_path) if graph_data is None else graph_data
+    graph_data = (
+        get_graph_data(cdk_out_path=cdk_out_path, aws_session=aws_session, aws_profile_name=aws_profile_name)
+        if graph_data is None
+        else graph_data
+    )
 
     log.info('building dependency graph from graph data')
     dep_graph: nx.MultiDiGraph = nx.MultiDiGraph()
     for export in graph_data.values():
-        # export_key = node_key(export)
-        if export.stack_name in nodes_to_ignore:
+        export_key = node_key_fn(export)
+        if export_key in nodes_to_ignore:
             continue
 
         edges = []
         for importing_stack in export.importing_stacks:
-            # importing_key = node_key(importing_stack)
-            if importing_stack.stack_name not in nodes_to_ignore:
-                edge = (export.stack_name, importing_stack.stack_name)
+            importing_key = node_key_fn(importing_stack)
+            if importing_key not in nodes_to_ignore:
+                edge = (export_key, importing_key)
                 if list(edge) not in edges_to_ignore:
                     edges.append(edge)
 
@@ -70,5 +97,9 @@ def build_graph(
             dep_graph.add_edges_from(ebunch_to_add=edges)
         else:
             # export key
-            dep_graph.add_node(export.stack_name)
+            dep_graph.add_node(export_key)
+
+    if remove_selfloops:
+        dep_graph.remove_edges_from(nx.selfloop_edges(dep_graph))
+
     return dep_graph
