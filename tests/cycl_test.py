@@ -1,5 +1,5 @@
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import networkx as nx
 import pytest
@@ -19,6 +19,12 @@ def mock_boto3():
 @pytest.fixture(autouse=True)
 def mock_config():
     with patch.object(cycl_module, 'Config') as mock:
+        yield mock
+
+
+@pytest.fixture(autouse=True)
+def mock_session():
+    with patch.object(cycl_module, 'Session') as mock:
         yield mock
 
 
@@ -605,3 +611,161 @@ def test_build_graph_make_cyclic_graph_acyclic_with_ignore_edges(
 
     assert nx.is_directed_acyclic_graph(actual_graph)
     assert list(nx.simple_cycles(actual_graph)) == []
+
+
+def test_build_graph_includes_selfloop(mock_get_graph_data, subtests, mock_get_exports_from_assembly):
+    graph_data = {
+        'some-name-1': ExportData(
+            stack_id='some-exporting-stack-id-1',
+            stack_name='some-exporting-stack-id-1-name',
+            export_name='some-name-1',
+            export_value='some-value-1',
+            importing_stacks=[
+                ExportData(stack_name='some-exporting-stack-id-1-name'),
+            ],
+        ),
+    }
+    mock_get_graph_data.return_value = graph_data
+    expected_edges = [
+        ('some-exporting-stack-id-1-name', 'some-exporting-stack-id-1-name'),
+    ]
+    expected_nodes = [
+        'some-exporting-stack-id-1-name',
+    ]
+    expected_cycles = [['some-exporting-stack-id-1-name']]
+
+    actual_graph = build_graph()
+
+    mock_get_exports_from_assembly.assert_not_called()
+    for expected_node in expected_nodes:
+        with subtests.test(msg='assert graph has node', expected_node=expected_node):
+            assert actual_graph.has_node(expected_node)
+    assert nx.number_of_nodes(actual_graph) == len(expected_nodes)
+
+    for expected_edge in expected_edges:
+        with subtests.test(msg='assert graph has edge', expected_edge=expected_edge):
+            assert actual_graph.has_edge(*expected_edge)
+    assert nx.number_of_edges(actual_graph) == len(expected_edges)
+
+    assert not nx.is_directed_acyclic_graph(actual_graph)
+    actual_cycles = list(nx.simple_cycles(actual_graph))
+
+    for expected_cycle in expected_cycles:
+        with subtests.test(msg='assert cycle is expected', expected_cycles=expected_cycles):
+            assert any(is_circular_reversible_permutation(actual_cycle, expected_cycle) for actual_cycle in actual_cycles)
+
+    assert len(actual_cycles) == len(expected_cycles)
+
+
+def test_build_graph_removes_selfloop(mock_get_graph_data, subtests, mock_get_exports_from_assembly):
+    graph_data = {
+        'some-name-1': ExportData(
+            stack_id='some-exporting-stack-id-1',
+            stack_name='some-exporting-stack-id-1-name',
+            export_name='some-name-1',
+            export_value='some-value-1',
+            importing_stacks=[
+                ExportData(stack_name='some-exporting-stack-id-1-name'),
+            ],
+        ),
+    }
+    mock_get_graph_data.return_value = graph_data
+    expected_edges = []
+    expected_nodes = [
+        'some-exporting-stack-id-1-name',
+    ]
+    expected_cycles = []
+
+    actual_graph = build_graph(remove_selfloops=True)
+
+    mock_get_exports_from_assembly.assert_not_called()
+    for expected_node in expected_nodes:
+        with subtests.test(msg='assert graph has node', expected_node=expected_node):
+            assert actual_graph.has_node(expected_node)
+    assert nx.number_of_nodes(actual_graph) == len(expected_nodes)
+
+    for expected_edge in expected_edges:
+        with subtests.test(msg='assert graph has edge', expected_edge=expected_edge):
+            assert actual_graph.has_edge(*expected_edge)
+    assert nx.number_of_edges(actual_graph) == len(expected_edges)
+
+    assert nx.is_directed_acyclic_graph(actual_graph)
+    actual_cycles = list(nx.simple_cycles(actual_graph))
+
+    for expected_cycle in expected_cycles:
+        with subtests.test(msg='assert cycle is expected', expected_cycles=expected_cycles):
+            assert any(is_circular_reversible_permutation(actual_cycle, expected_cycle) for actual_cycle in actual_cycles)
+
+    assert len(actual_cycles) == len(expected_cycles)
+
+
+def test_build_graph_uses_node_key_fn(subtests, mock_get_graph_data):
+    graph_data = {
+        'some-name-1': ExportData(
+            stack_name='some-exporting-stack-name-1',
+            stack_id='some-exporting-stack-id-1',
+            export_name='some-name-1',
+            export_value='some-value-1',
+            importing_stacks=[
+                ExportData(
+                    stack_name='some-importing-stack-name-1',
+                ),
+                ExportData(
+                    stack_name='some-importing-stack-name-2',
+                ),
+            ],
+        )
+    }
+    mock_get_graph_data.return_value = graph_data
+    expected_edges = [
+        ('some-exporting-stack-name-1-node-func', 'some-importing-stack-name-1-node-func'),
+        ('some-exporting-stack-name-1-node-func', 'some-importing-stack-name-2-node-func'),
+    ]
+    expected_nodes = [
+        'some-exporting-stack-name-1-node-func',
+        'some-importing-stack-name-1-node-func',
+        'some-importing-stack-name-2-node-func',
+    ]
+
+    def node_key_fn(x: ExportData):
+        return f'{x.stack_name}-node-func'
+
+    actual_graph = build_graph(node_key_fn=node_key_fn)
+
+    for expected_node in expected_nodes:
+        with subtests.test(msg='assert graph has node', expected_node=expected_node):
+            assert actual_graph.has_node(expected_node)
+    assert nx.number_of_nodes(actual_graph) == len(expected_nodes)
+
+    for expected_edge in expected_edges:
+        with subtests.test(msg='assert graph has edge', expected_edge=expected_edge):
+            assert actual_graph.has_edge(*expected_edge)
+    assert nx.number_of_edges(actual_graph) == len(expected_edges)
+
+    assert nx.is_directed_acyclic_graph(actual_graph)
+    assert next(nx.simple_cycles(actual_graph), []) == []
+
+
+def test_get_graph_data_uses_session_to_create_client(mock_config):
+    expected_graph_data = {}
+    mock_aws_session = Mock()
+
+    actual_graph = get_graph_data(aws_session=mock_aws_session)
+    mock_aws_session.client.assert_called_once_with(
+        'cloudformation',
+        config=mock_config.return_value,
+    )
+    assert actual_graph == expected_graph_data
+
+
+def test_get_graph_data_uses_profile_name_to_create_client(mock_config, mock_session):
+    expected_graph_data = {}
+    profile_name = 'some-profile-name'
+
+    actual_graph = get_graph_data(aws_profile_name=profile_name)
+    mock_session.assert_called_once_with(profile_name=profile_name)
+    mock_session.return_value.client.assert_called_once_with(
+        'cloudformation',
+        config=mock_config.return_value,
+    )
+    assert actual_graph == expected_graph_data
