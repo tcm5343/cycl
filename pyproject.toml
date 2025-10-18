@@ -38,7 +38,7 @@ enabled = true
 test = [
     'pytest-cov==7.0.0',
     'pytest-subtests==0.14.2',
-    'pytest-sugar==1.0.0',
+    'pytest-sugar==1.1.1',
     'pytest==8.3.5',
 ]
 validation = [
