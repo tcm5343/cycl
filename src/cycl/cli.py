@@ -37,7 +37,7 @@ def create_parser() -> argparse.ArgumentParser:
     sp = parser.add_subparsers(dest='cmd', required=True)
 
     check_p = sp.add_parser('check', help='Check for cycles between AWS stack imports and exports.')
-    check_p.add_argument('--exit-zero', action='store_true', help='Exit zero regardless of cyclic chekc result.')
+    check_p.add_argument('--exit-zero', action='store_true', help='Exit zero regardless of cyclic check result.')
 
     topo_p = sp.add_parser('topo', help='Find topological generations, if dependencies are acyclic')
 

@@ -81,11 +81,10 @@ validate: install-validation-deps  ## Run the code quality checks
 	)
 
 test: install-test-deps  ## Run unit tests
-# run specific tests: make test 'ARGS=--no-cov ./tests/models'
 	@( \
 		source ./.venv/bin/activate; \
 		export PYTHONPATH=./src/; \
-		pytest --cov=./src/ $(ARGS); \
+		pytest tests/ --cov=./src/; \
 	)
 
 doc-serve: install-doc-deps ## Serve the documentation locally
