@@ -6,7 +6,7 @@ import pytest
 
 import cycl.cycl as cycl_module
 from cycl.cycl import build_graph, get_graph_data
-from cycl.models.export_data import NodeData
+from cycl.models.node_data import NodeData
 from cycl.utils.testing import is_circular_reversible_permutation
 
 

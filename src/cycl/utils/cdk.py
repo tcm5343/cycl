@@ -4,7 +4,7 @@ import json
 from logging import getLogger
 from pathlib import Path
 
-from cycl.models.export_data import NodeData
+from cycl.models.node_data import NodeData
 
 log = getLogger(__name__)
 
