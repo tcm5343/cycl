@@ -772,7 +772,7 @@ def test_get_graph_data_uses_profile_name_to_create_client(mock_config, mock_ses
 
 
 def test_build_graph_returns_some_graph_with_node_data(subtests, mock_get_graph_data):
-    """ tests both """
+    """Tests node_data being adding to exporting and importing nodes."""
     graph_data = {
         'some-name-1': NodeData(
             stack_name='some-exporting-stack-id-1-name',
