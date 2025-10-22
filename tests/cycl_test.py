@@ -6,7 +6,7 @@ import pytest
 
 import cycl.cycl as cycl_module
 from cycl.cycl import build_graph, get_graph_data
-from cycl.models.export_data import ExportData
+from cycl.models.export_data import NodeData
 from cycl.utils.testing import is_circular_reversible_permutation
 
 
@@ -30,21 +30,21 @@ def mock_session():
 
 @pytest.fixture(autouse=True)
 def mock_parse_name_from_id():
-    with patch.object(ExportData, 'parse_name_from_id', autospec=True) as mock:
+    with patch.object(NodeData, 'parse_name_from_id', autospec=True) as mock:
         mock.side_effect = lambda x: f'{x}-name'
         yield mock
 
 
 @pytest.fixture(autouse=True)
 def mock_get_all_exports():
-    with patch.object(ExportData, 'get_all_exports', autospec=True) as mock:
+    with patch.object(NodeData, 'get_all_exports', autospec=True) as mock:
         mock.return_value = {}
         yield mock
 
 
 @pytest.fixture(autouse=True)
 def mock_get_all_imports():
-    with patch.object(ExportData, 'get_all_imports', autospec=True) as mock:
+    with patch.object(NodeData, 'get_all_imports', autospec=True) as mock:
         mock.return_value = []
         yield mock
 
@@ -92,7 +92,7 @@ def test_build_graph_does_not_call_get_graph_data_if_dep_graph_data_exists(
 
 def test_get_graph_data_returns_some_graph_data(mock_get_all_exports, mock_get_all_imports):
     mock_get_all_exports.return_value = {
-        'some-name-1': ExportData(
+        'some-name-1': NodeData(
             stack_name='some-exporting-stack-id-1-name',
             stack_id='some-exporting-stack-id-1',
             export_name='some-name-1',
@@ -102,22 +102,22 @@ def test_get_graph_data_returns_some_graph_data(mock_get_all_exports, mock_get_a
 
     def mock_get_all_imports_side_effect_func(self, cfn_client):  # noqa: ARG001
         self.importing_stacks = [
-            ExportData(stack_name='some-importing-stack-name-1'),
-            ExportData(stack_name='some-importing-stack-name-2'),
+            NodeData(stack_name='some-importing-stack-name-1'),
+            NodeData(stack_name='some-importing-stack-name-2'),
         ]
 
     mock_get_all_imports.side_effect = mock_get_all_imports_side_effect_func
     expected_graph_data = {
-        'some-name-1': ExportData(
+        'some-name-1': NodeData(
             stack_name='some-exporting-stack-id-1-name',
             stack_id='some-exporting-stack-id-1',
             export_name='some-name-1',
             export_value='some-value-1',
             importing_stacks=[
-                ExportData(
+                NodeData(
                     stack_name='some-importing-stack-name-1',
                 ),
-                ExportData(
+                NodeData(
                     stack_name='some-importing-stack-name-2',
                 ),
             ],
@@ -132,16 +132,16 @@ def test_get_graph_data_returns_some_graph_data(mock_get_all_exports, mock_get_a
 
 def test_build_graph_returns_some_graph(subtests, mock_get_graph_data):
     graph_data = {
-        'some-name-1': ExportData(
+        'some-name-1': NodeData(
             stack_name='some-exporting-stack-id-1-name',
             stack_id='some-exporting-stack-id-1',
             export_name='some-name-1',
             export_value='some-value-1',
             importing_stacks=[
-                ExportData(
+                NodeData(
                     stack_name='some-importing-stack-name-1',
                 ),
-                ExportData(
+                NodeData(
                     stack_name='some-importing-stack-name-2',
                 ),
             ],
@@ -176,13 +176,13 @@ def test_build_graph_returns_some_graph(subtests, mock_get_graph_data):
 
 def test_get_graph_data_returns_graph_data_with_multiple_exports(mock_get_all_exports, mock_get_all_imports):
     mock_get_all_exports.return_value = {
-        'some-name-1': ExportData(
+        'some-name-1': NodeData(
             stack_id='some-exporting-stack-id-1',
             stack_name='some-exporting-stack-id-1-name',
             export_name='some-name-1',
             export_value='some-value-1',
         ),
-        'some-name-2': ExportData(
+        'some-name-2': NodeData(
             stack_id='some-exporting-stack-id-2',
             stack_name='some-exporting-stack-id-2-name',
             export_name='some-name-2',
@@ -193,38 +193,38 @@ def test_get_graph_data_returns_graph_data_with_multiple_exports(mock_get_all_ex
     def mock_get_all_imports_side_effect_func(self, cfn_client):  # noqa: ARG001
         if self.export_name == 'some-name-1':
             self.importing_stacks = [
-                ExportData(stack_name='some-importing-stack-name-1'),
-                ExportData(stack_name='some-importing-stack-name-2'),
+                NodeData(stack_name='some-importing-stack-name-1'),
+                NodeData(stack_name='some-importing-stack-name-2'),
             ]
         elif self.export_name == 'some-name-2':
             self.importing_stacks = [
-                ExportData(stack_name='some-importing-stack-name-1'),
+                NodeData(stack_name='some-importing-stack-name-1'),
             ]
 
     mock_get_all_imports.side_effect = mock_get_all_imports_side_effect_func
 
     expected_graph_data = {
-        'some-name-1': ExportData(
+        'some-name-1': NodeData(
             stack_id='some-exporting-stack-id-1',
             stack_name='some-exporting-stack-id-1-name',
             export_name='some-name-1',
             export_value='some-value-1',
             importing_stacks=[
-                ExportData(
+                NodeData(
                     stack_name='some-importing-stack-name-1',
                 ),
-                ExportData(
+                NodeData(
                     stack_name='some-importing-stack-name-2',
                 ),
             ],
         ),
-        'some-name-2': ExportData(
+        'some-name-2': NodeData(
             stack_id='some-exporting-stack-id-2',
             stack_name='some-exporting-stack-id-2-name',
             export_name='some-name-2',
             export_value='some-value-2',
             importing_stacks=[
-                ExportData(
+                NodeData(
                     stack_name='some-importing-stack-name-1',
                 ),
             ],
@@ -239,27 +239,27 @@ def test_get_graph_data_returns_graph_data_with_multiple_exports(mock_get_all_ex
 
 def test_build_graph_returns_graph_with_multiple_exports(subtests, mock_get_graph_data):
     graph_data = {
-        'some-name-1': ExportData(
+        'some-name-1': NodeData(
             stack_id='some-exporting-stack-id-1',
             stack_name='some-exporting-stack-id-1-name',
             export_name='some-name-1',
             export_value='some-value-1',
             importing_stacks=[
-                ExportData(
+                NodeData(
                     stack_name='some-importing-stack-name-1',
                 ),
-                ExportData(
+                NodeData(
                     stack_name='some-importing-stack-name-2',
                 ),
             ],
         ),
-        'some-name-2': ExportData(
+        'some-name-2': NodeData(
             stack_id='some-exporting-stack-id-2',
             stack_name='some-exporting-stack-id-2-name',
             export_name='some-name-2',
             export_value='some-value-2',
             importing_stacks=[
-                ExportData(
+                NodeData(
                     stack_name='some-importing-stack-name-1',
                 ),
             ],
@@ -296,7 +296,7 @@ def test_build_graph_returns_graph_with_multiple_exports(subtests, mock_get_grap
 
 def test_get_graph_data_returns_graph_data_when_export_has_no_imports(mock_get_all_exports, mock_get_all_imports):
     mock_get_all_exports.return_value = {
-        'some-name-1': ExportData(
+        'some-name-1': NodeData(
             stack_id='some-exporting-stack-id-1',
             stack_name='some-exporting-stack-id-1-name',
             export_name='some-name-1',
@@ -310,7 +310,7 @@ def test_get_graph_data_returns_graph_data_when_export_has_no_imports(mock_get_a
     mock_get_all_imports.side_effect = mock_get_all_imports_side_effect_func
 
     expected_graph_data = {
-        'some-name-1': ExportData(
+        'some-name-1': NodeData(
             stack_id='some-exporting-stack-id-1',
             stack_name='some-exporting-stack-id-1-name',
             export_name='some-name-1',
@@ -326,7 +326,7 @@ def test_get_graph_data_returns_graph_data_when_export_has_no_imports(mock_get_a
 
 def test_build_graph_returns_graph_when_export_has_no_imports(subtests, mock_get_graph_data):
     graph_data = {
-        'some-name-1': ExportData(
+        'some-name-1': NodeData(
             stack_id='some-exporting-stack-id-1',
             stack_name='some-exporting-stack-id-1-name',
             export_name='some-name-1',
@@ -365,13 +365,13 @@ def test_get_graph_data_returns_graph_data_with_cdk_out_path(
 ):
     mock_get_exports_from_assembly.return_value = {
         'some-name-1': [
-            ExportData(
+            NodeData(
                 stack_name='some-cdk-out-stack-name-1',
             )
         ],
     }
     mock_get_all_exports.return_value = {
-        'some-name-1': ExportData(
+        'some-name-1': NodeData(
             stack_id='some-exporting-stack-id-1',
             stack_name='some-exporting-stack-id-1-name',
             export_name='some-name-1',
@@ -381,25 +381,25 @@ def test_get_graph_data_returns_graph_data_with_cdk_out_path(
 
     def mock_get_all_imports_side_effect_func(self, cfn_client):  # noqa: ARG001
         self.importing_stacks = [
-            ExportData(stack_name='some-importing-stack-name-1'),
-            ExportData(stack_name='some-importing-stack-name-2'),
+            NodeData(stack_name='some-importing-stack-name-1'),
+            NodeData(stack_name='some-importing-stack-name-2'),
         ]
 
     mock_get_all_imports.side_effect = mock_get_all_imports_side_effect_func
     expected_graph_data = {
-        'some-name-1': ExportData(
+        'some-name-1': NodeData(
             stack_id='some-exporting-stack-id-1',
             stack_name='some-exporting-stack-id-1-name',
             export_name='some-name-1',
             export_value='some-value-1',
             importing_stacks=[
-                ExportData(
+                NodeData(
                     stack_name='some-importing-stack-name-1',
                 ),
-                ExportData(
+                NodeData(
                     stack_name='some-importing-stack-name-2',
                 ),
-                ExportData(
+                NodeData(
                     stack_name='some-cdk-out-stack-name-1',
                 ),
             ],
@@ -424,7 +424,7 @@ def test_get_graph_data_returns_graph_data_with_cdk_out_path_and_no_existing_exp
     """
     mock_get_exports_from_assembly.return_value = {
         'some-name-1': [
-            ExportData(
+            NodeData(
                 stack_name='some-cdk-out-stack-name-1',
             )
         ],
@@ -457,22 +457,22 @@ def test_config_defined_as_expected(mock_config, mock_boto3):
 
 def test_build_graph_returns_cyclic_graph(mock_get_graph_data, subtests, mock_get_exports_from_assembly):
     graph_data = {
-        'some-name-1': ExportData(
+        'some-name-1': NodeData(
             stack_id='some-exporting-stack-id-1',
             stack_name='some-exporting-stack-id-1-name',
             export_name='some-name-1',
             export_value='some-value-1',
             importing_stacks=[
-                ExportData(stack_name='some-exporting-stack-id-2-name'),
+                NodeData(stack_name='some-exporting-stack-id-2-name'),
             ],
         ),
-        'some-name-2': ExportData(
+        'some-name-2': NodeData(
             stack_id='some-exporting-stack-id-2',
             stack_name='some-exporting-stack-id-2-name',
             export_name='some-name-2',
             export_value='some-value-2',
             importing_stacks=[
-                ExportData(stack_name='some-exporting-stack-id-1-name'),
+                NodeData(stack_name='some-exporting-stack-id-1-name'),
             ],
         ),
     }
@@ -514,23 +514,23 @@ def test_build_graph_make_cyclic_graph_acyclic_with_ignore_nodes(
     mock_get_graph_data, subtests, mock_get_exports_from_assembly
 ):
     graph_data = {
-        'some-name-1': ExportData(
+        'some-name-1': NodeData(
             stack_id='some-exporting-stack-id-1',
             stack_name='some-exporting-stack-id-1-name',
             export_name='some-name-1',
             export_value='some-value-1',
             importing_stacks=[
-                ExportData(stack_name='some-exporting-stack-id-2-name'),
-                ExportData(stack_name='some-importing-stack-id-3-name'),
+                NodeData(stack_name='some-exporting-stack-id-2-name'),
+                NodeData(stack_name='some-importing-stack-id-3-name'),
             ],
         ),
-        'some-name-2': ExportData(
+        'some-name-2': NodeData(
             stack_id='some-exporting-stack-id-2',
             stack_name='some-exporting-stack-id-2-name',
             export_name='some-name-2',
             export_value='some-value-2',
             importing_stacks=[
-                ExportData(stack_name='some-exporting-stack-id-1-name'),
+                NodeData(stack_name='some-exporting-stack-id-1-name'),
             ],
         ),
     }
@@ -564,22 +564,22 @@ def test_build_graph_make_cyclic_graph_acyclic_with_ignore_edges(
     mock_get_graph_data, subtests, mock_get_exports_from_assembly
 ):
     graph_data = {
-        'some-name-1': ExportData(
+        'some-name-1': NodeData(
             stack_id='some-exporting-stack-id-1',
             stack_name='some-exporting-stack-id-1-name',
             export_name='some-name-1',
             export_value='some-value-1',
             importing_stacks=[
-                ExportData(stack_name='some-exporting-stack-id-2-name'),
+                NodeData(stack_name='some-exporting-stack-id-2-name'),
             ],
         ),
-        'some-name-2': ExportData(
+        'some-name-2': NodeData(
             stack_id='some-exporting-stack-id-2',
             stack_name='some-exporting-stack-id-2-name',
             export_name='some-name-2',
             export_value='some-value-2',
             importing_stacks=[
-                ExportData(stack_name='some-exporting-stack-id-1-name'),
+                NodeData(stack_name='some-exporting-stack-id-1-name'),
             ],
         ),
     }
@@ -615,13 +615,13 @@ def test_build_graph_make_cyclic_graph_acyclic_with_ignore_edges(
 
 def test_build_graph_includes_selfloop(mock_get_graph_data, subtests, mock_get_exports_from_assembly):
     graph_data = {
-        'some-name-1': ExportData(
+        'some-name-1': NodeData(
             stack_id='some-exporting-stack-id-1',
             stack_name='some-exporting-stack-id-1-name',
             export_name='some-name-1',
             export_value='some-value-1',
             importing_stacks=[
-                ExportData(stack_name='some-exporting-stack-id-1-name'),
+                NodeData(stack_name='some-exporting-stack-id-1-name'),
             ],
         ),
     }
@@ -659,13 +659,13 @@ def test_build_graph_includes_selfloop(mock_get_graph_data, subtests, mock_get_e
 
 def test_build_graph_removes_selfloop(mock_get_graph_data, subtests, mock_get_exports_from_assembly):
     graph_data = {
-        'some-name-1': ExportData(
+        'some-name-1': NodeData(
             stack_id='some-exporting-stack-id-1',
             stack_name='some-exporting-stack-id-1-name',
             export_name='some-name-1',
             export_value='some-value-1',
             importing_stacks=[
-                ExportData(stack_name='some-exporting-stack-id-1-name'),
+                NodeData(stack_name='some-exporting-stack-id-1-name'),
             ],
         ),
     }
@@ -701,16 +701,16 @@ def test_build_graph_removes_selfloop(mock_get_graph_data, subtests, mock_get_ex
 
 def test_build_graph_uses_node_key_fn(subtests, mock_get_graph_data):
     graph_data = {
-        'some-name-1': ExportData(
+        'some-name-1': NodeData(
             stack_name='some-exporting-stack-name-1',
             stack_id='some-exporting-stack-id-1',
             export_name='some-name-1',
             export_value='some-value-1',
             importing_stacks=[
-                ExportData(
+                NodeData(
                     stack_name='some-importing-stack-name-1',
                 ),
-                ExportData(
+                NodeData(
                     stack_name='some-importing-stack-name-2',
                 ),
             ],
@@ -727,7 +727,7 @@ def test_build_graph_uses_node_key_fn(subtests, mock_get_graph_data):
         'some-importing-stack-name-2-node-func',
     ]
 
-    def node_key_fn(x: ExportData):
+    def node_key_fn(x: NodeData):
         return f'{x.stack_name}-node-func'
 
     actual_graph = build_graph(node_key_fn=node_key_fn)
@@ -769,3 +769,35 @@ def test_get_graph_data_uses_profile_name_to_create_client(mock_config, mock_ses
         config=mock_config.return_value,
     )
     assert actual_graph == expected_graph_data
+
+
+def test_build_graph_returns_some_graph_with_node_data(subtests, mock_get_graph_data):
+    """Tests node_data being adding to exporting and importing nodes."""
+    graph_data = {
+        'some-name-1': NodeData(
+            stack_name='some-exporting-stack-id-1-name',
+            stack_id='some-exporting-stack-id-1',
+            export_name='some-name-1',
+            export_value='some-value-1',
+            importing_stacks=[
+                NodeData(
+                    stack_name='some-importing-stack-name-1',
+                ),
+                NodeData(
+                    stack_name='some-importing-stack-name-2',
+                ),
+            ],
+        )
+    }
+    mock_get_graph_data.return_value = graph_data
+    expected_nodes = (
+        {'node_key': 'some-exporting-stack-id-1-name', 'node_data': graph_data['some-name-1']},
+        {'node_key': 'some-importing-stack-name-1', 'node_data': graph_data['some-name-1'].importing_stacks[0]},
+        {'node_key': 'some-importing-stack-name-2', 'node_data': graph_data['some-name-1'].importing_stacks[1]},
+    )
+
+    actual_graph = build_graph()
+
+    for expected_node in expected_nodes:
+        with subtests.test(msg='assert graph has node with attrs', expected_node=expected_node):
+            assert actual_graph.nodes[expected_node['node_key']]['node_data'] == expected_node['node_data']

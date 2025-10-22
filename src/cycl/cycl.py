@@ -9,7 +9,7 @@ import networkx as nx
 from botocore.config import Config
 from botocore.session import Session
 
-from cycl.models.export_data import ExportData
+from cycl.models.export_data import NodeData
 from cycl.utils.cdk import get_exports_from_assembly
 
 if TYPE_CHECKING:
@@ -23,8 +23,8 @@ def get_graph_data(
     cdk_out_path: Path | None = None,
     aws_session: Session | None = None,
     aws_profile_name: str | None = None,
-) -> dict[str, ExportData]:
-    cdk_out_imports: dict[str, list[ExportData]] = (
+) -> dict[str, NodeData]:
+    cdk_out_imports: dict[str, list[NodeData]] = (
         get_exports_from_assembly(Path(cdk_out_path)) if cdk_out_path is not None else {}
     )
     log.info('cdk_out_imports: %s', cdk_out_imports)
@@ -40,7 +40,7 @@ def get_graph_data(
         cfn_client = boto3.client('cloudformation', config=boto_config)
 
     log.info('getting all exports')
-    exports = ExportData.get_all_exports(cfn_client=cfn_client)
+    exports = NodeData.get_all_exports(cfn_client=cfn_client)
     for export_name, importing_stacks in cdk_out_imports.items():
         if export_name not in exports:
             log.warning(
@@ -60,9 +60,9 @@ def get_graph_data(
 
 
 def build_graph(  # noqa: PLR0913
-    graph_data: dict[str, ExportData] | None = None,
+    graph_data: dict[str, NodeData] | None = None,
     cdk_out_path: Path | None = None,
-    node_key_fn: Callable[[ExportData], Hashable] = lambda x: x.stack_name,
+    node_key_fn: Callable[[NodeData], Hashable] = lambda x: x.stack_name,
     nodes_to_ignore: list[str] | None = None,
     edges_to_ignore: list[list[str]] | None = None,
     aws_session: Session | None = None,
@@ -80,24 +80,21 @@ def build_graph(  # noqa: PLR0913
 
     log.info('building dependency graph from graph data')
     dep_graph: nx.MultiDiGraph = nx.MultiDiGraph()
+
     for export in graph_data.values():
         export_key = node_key_fn(export)
         if export_key in nodes_to_ignore:
             continue
 
-        edges = []
+        dep_graph.add_node(export_key, node_data=export)
+
         for importing_stack in export.importing_stacks:
             importing_key = node_key_fn(importing_stack)
             if importing_key not in nodes_to_ignore:
                 edge = (export_key, importing_key)
                 if list(edge) not in edges_to_ignore:
-                    edges.append(edge)
-
-        if edges:
-            dep_graph.add_edges_from(ebunch_to_add=edges)
-        else:
-            # export key
-            dep_graph.add_node(export_key)
+                    dep_graph.add_edge(*edge)
+                    dep_graph.add_node(importing_key, node_data=importing_stack)
 
     if remove_selfloops:
         dep_graph.remove_edges_from(nx.selfloop_edges(dep_graph))
