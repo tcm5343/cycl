@@ -13,32 +13,32 @@ if TYPE_CHECKING:
 log = getLogger(__name__)
 
 
-class ExportData:
+class NodeData:
     def __init__(
         self,
         stack_name: str,
         stack_id: str | None = None,
         export_name: str | None = None,
         export_value: str | None = None,
+        importing_stacks: list[NodeData] | None = None,
         # parent_id: str | None = None,
         # root_id: str | None = None,
         # tags: dict[str, str] | None = None,
         # outputs: list[str] | None = None,
-        importing_stacks: list[ExportData] | None = None,
     ) -> None:
         self.stack_name = stack_name
         self.stack_id = stack_id
         self.export_name = export_name
         self.export_value = export_value
+        self.importing_stacks = importing_stacks or []
         # self.parent_id = parent_id
         # self.root_id = root_id
         # self.tags = tags
         # self.outputs = outputs or []
-        self.importing_stacks = importing_stacks or []
 
     @classmethod
-    def from_list_exports(cls, list_exports_resp: ListExportsOutputTypeDef) -> dict[str, ExportData]:
-        """Convert an AWS CloudFormation list exports response into a dictionary of export name to ExportData instances.
+    def from_list_exports(cls, list_exports_resp: ListExportsOutputTypeDef) -> dict[str, NodeData]:
+        """Convert an AWS CloudFormation list exports response into a dictionary of export name to NodeData instances.
 
         Args:
             list_exports_resp: A dictionary representing the list exports response,
@@ -48,8 +48,8 @@ class ExportData:
                 - 'Value': The exported value.
 
         Returns:
-            A dictionary mapping export names to ExportData instances,
-            where each ExportData object contains information about the corresponding export.
+            A dictionary mapping export names to NodeData instances,
+            where each NodeData object contains information about the corresponding export.
         """
         return {
             export['Name']: cls(
@@ -62,35 +62,35 @@ class ExportData:
         }
 
     @classmethod
-    def get_all_exports(cls, cfn_client: CloudFormationClient | None = None) -> dict[str, ExportData]:
-        """Retrieve all AWS CloudFormation exports and return them as a dictionary of export name to ExportData instances.
+    def get_all_exports(cls, cfn_client: CloudFormationClient | None = None) -> dict[str, NodeData]:
+        """Retrieve all AWS CloudFormation exports and return them as a dictionary of export name to NodeData instances.
 
         Args:
             cfn_client: A Boto3 CloudFormation client instance.
                 If not provided, a new client will be created.
 
         Returns:
-            A dictionary mapping export names to ExportData instances,
-            where each ExportData object contains details about the corresponding export.
+            A dictionary mapping export names to NodeData instances,
+            where each NodeData object contains details about the corresponding export.
 
         Note:
             This function paginates through the AWS CloudFormation `list_exports` API to retrieve all exports.
         """
         cfn_client = cfn_client or boto3.client('cloudformation')
 
-        exports: dict[str, ExportData] = {}
+        exports: dict[str, NodeData] = {}
         resp = cfn_client.list_exports()
         log.debug(resp)
-        exports.update(ExportData.from_list_exports(resp))
+        exports.update(NodeData.from_list_exports(resp))
         while token := resp.get('NextToken'):
             resp = cfn_client.list_exports(NextToken=token)
             log.debug(resp)
-            exports.update(ExportData.from_list_exports(resp))
+            exports.update(NodeData.from_list_exports(resp))
         log.debug(exports)
         return exports
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, ExportData):
+        if not isinstance(other, NodeData):
             return False
         return vars(self) == vars(other)
 
@@ -98,9 +98,9 @@ class ExportData:
         return hash(tuple((key, tuple(value) if isinstance(value, list) else value) for key, value in vars(self).items()))
 
     def __repr__(self) -> str:
-        return f'ExportData(stack_name={self.stack_name!r}, export_name={self.export_name!r})'
+        return f'NodeData(stack_name={self.stack_name!r}, export_name={self.export_name!r})'
 
-    def get_all_imports(self, cfn_client: CloudFormationClient | None = None) -> ExportData:
+    def get_all_imports(self, cfn_client: CloudFormationClient | None = None) -> NodeData:
         """Retrieve all stacks that import the current export and update the importing_stacks attribute.
 
         Args:
@@ -120,13 +120,13 @@ class ExportData:
                 resp = cfn_client.list_imports(ExportName=self.export_name)
                 log.debug(resp)
                 self.importing_stacks.extend(
-                    [ExportData(stack_name=importing_stack_name) for importing_stack_name in resp['Imports']]
+                    [NodeData(stack_name=importing_stack_name) for importing_stack_name in resp['Imports']]
                 )
                 while token := resp.get('NextToken'):
                     resp = cfn_client.list_imports(ExportName=self.export_name, NextToken=token)
                     log.debug(resp)
                     self.importing_stacks.extend(
-                        [ExportData(stack_name=importing_stack_name) for importing_stack_name in resp['Imports']]
+                        [NodeData(stack_name=importing_stack_name) for importing_stack_name in resp['Imports']]
                     )
             except ClientError as err:
                 if 'is not imported by any stack' not in repr(err):
