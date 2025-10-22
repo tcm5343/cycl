@@ -3,8 +3,8 @@ from unittest.mock import Mock, call, patch
 import pytest
 from botocore.exceptions import ClientError
 
-import cycl.models.export_data as export_data_module
-from cycl.models.export_data import NodeData
+import cycl.models.node_data as node_data_module
+from cycl.models.node_data import NodeData
 
 
 @pytest.fixture
@@ -21,7 +21,7 @@ def cfn_client_mock():
 
 @pytest.fixture
 def mock_boto3(cfn_client_mock):
-    with patch.object(export_data_module, 'boto3') as mock:
+    with patch.object(node_data_module, 'boto3') as mock:
 
         def client_side_effect_func(service, **_kwargs):
             if service == 'cloudformation':
@@ -129,11 +129,11 @@ def test_get_all_imports_returns_imports(list_imports_return, expected_imports, 
     export_name = 'some-export_name'
     cfn_client_mock.list_imports.return_value = {'Imports': list_imports_return}
 
-    actual_export_data = NodeData(stack_name='some-stack-name', export_name=export_name).get_all_imports()
+    actual_node_data = NodeData(stack_name='some-stack-name', export_name=export_name).get_all_imports()
 
     mock_boto3.client.assert_called_once_with('cloudformation')
     cfn_client_mock.list_imports.assert_called_once_with(ExportName=export_name)
-    assert actual_export_data.importing_stacks == expected_imports
+    assert actual_node_data.importing_stacks == expected_imports
 
 
 def test_get_all_imports_conditionally_creates_client(mock_boto3, cfn_client_mock):
@@ -141,12 +141,12 @@ def test_get_all_imports_conditionally_creates_client(mock_boto3, cfn_client_moc
     expected_imports = []
     cfn_client_mock.list_imports.return_value = {'Imports': expected_imports}
 
-    actual_export_data = NodeData(stack_name='some-stack-name', export_name=export_name).get_all_imports(
+    actual_node_data = NodeData(stack_name='some-stack-name', export_name=export_name).get_all_imports(
         cfn_client=cfn_client_mock
     )
 
     mock_boto3.client.assert_not_called()
-    assert actual_export_data.importing_stacks == expected_imports
+    assert actual_node_data.importing_stacks == expected_imports
 
 
 def test_get_all_imports_uses_next_token(mock_boto3, cfn_client_mock):
@@ -159,7 +159,7 @@ def test_get_all_imports_uses_next_token(mock_boto3, cfn_client_mock):
         {'Imports': [import2]},
     ]
 
-    actual_export_data = NodeData(stack_name='some-stack-name', export_name=export_name).get_all_imports()
+    actual_node_data = NodeData(stack_name='some-stack-name', export_name=export_name).get_all_imports()
 
     mock_boto3.client.assert_called_once_with('cloudformation')
     cfn_client_mock.list_imports.assert_has_calls(
@@ -169,7 +169,7 @@ def test_get_all_imports_uses_next_token(mock_boto3, cfn_client_mock):
         ],
     )
     assert cfn_client_mock.list_imports.call_count == 2
-    assert actual_export_data.importing_stacks == expected_imports
+    assert actual_node_data.importing_stacks == expected_imports
 
 
 def test_get_all_imports_excepts_client_error(mock_boto3, cfn_client_mock):
@@ -179,10 +179,10 @@ def test_get_all_imports_excepts_client_error(mock_boto3, cfn_client_mock):
         'ListImports',
     )
 
-    actual_export_data = NodeData(stack_name='some-stack-name', export_name=export_name).get_all_imports()
+    actual_node_data = NodeData(stack_name='some-stack-name', export_name=export_name).get_all_imports()
 
     mock_boto3.client.assert_called_once_with('cloudformation')
-    assert actual_export_data.importing_stacks == []
+    assert actual_node_data.importing_stacks == []
 
 
 def test_get_all_imports_raises_client_error(mock_boto3, cfn_client_mock):
