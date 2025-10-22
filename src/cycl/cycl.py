@@ -9,7 +9,7 @@ import networkx as nx
 from botocore.config import Config
 from botocore.session import Session
 
-from cycl.models.export_data import NodeData
+from cycl.models.node_data import NodeData
 from cycl.utils.cdk import get_exports_from_assembly
 
 if TYPE_CHECKING:
