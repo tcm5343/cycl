@@ -6,7 +6,7 @@ from unittest.mock import patch
 import pytest
 
 import cycl.utils.cdk as cdk_module
-from cycl.models.export_data import ExportData
+from cycl.models.export_data import NodeData
 from cycl.utils.cdk import InvalidCdkOutPathError, get_exports_from_assembly
 
 
@@ -66,7 +66,7 @@ def test_get_exports_from_assembly_no_imports(cdk_out_mock, cdk_template_mock):
 def test_get_exports_from_assembly_has_imports(cdk_out_mock):
     expected = {
         'some-export-name-1': [
-            ExportData(
+            NodeData(
                 export_name='some-export-name-1',
                 stack_name='some-stack-display-name-1',
             ),
@@ -79,7 +79,7 @@ def test_get_exports_from_assembly_has_imports(cdk_out_mock):
 def test_get_exports_from_assembly_has_imports_in_list(cdk_out_mock, cdk_template_mock):
     expected = {
         'some-export-name-1': [
-            ExportData(
+            NodeData(
                 export_name='some-export-name-1',
                 stack_name='some-stack-display-name-1',
             ),
@@ -124,7 +124,7 @@ def test_get_cdk_out_adds_cdk_out_dir_if_not_already_there(cdk_out_mock, cdk_tem
     """Example is `infra/` being passed instead of `infra/cdk.out`, simply append `cdk.out/`."""
     expected = {
         'some-export-name-1': [
-            ExportData(
+            NodeData(
                 export_name='some-export-name-1',
                 stack_name='some-stack-display-name-1',
             ),
@@ -150,13 +150,13 @@ def test_get_cdk_out_adds_cdk_out_dir_if_not_already_there(cdk_out_mock, cdk_tem
 def test_get_exports_from_assembly_with_two_stacks(cdk_out_mock, cdk_template_mock, cdk_manifest_mock):
     expected = {
         'some-export-name-1': [
-            ExportData(
+            NodeData(
                 export_name='some-export-name-1',
                 stack_name='some-stack-display-name-1',
             ),
         ],
         'some-export-name-2': [
-            ExportData(
+            NodeData(
                 export_name='some-export-name-2',
                 stack_name='some-stack-display-name-2',
             ),
@@ -191,7 +191,7 @@ def test_get_exports_from_assembly_skips_when_unable_to_resolve_stack_name(
 ):
     expected = {
         'some-export-name-1': [
-            ExportData(
+            NodeData(
                 export_name='some-export-name-1',
                 stack_name='some-stack-display-name-1',
             ),
@@ -215,13 +215,13 @@ def test_get_exports_from_assembly_skips_when_unable_to_resolve_stack_name(
 def test_get_exports_from_assembly_with_stages(cdk_out_mock, cdk_template_mock, cdk_manifest_mock):
     expected = {
         'some-export-name-1': [
-            ExportData(
+            NodeData(
                 export_name='some-export-name-1',
                 stack_name='some-stack-display-name-1',
             ),
         ],
         'some-export-name-2': [
-            ExportData(
+            NodeData(
                 export_name='some-export-name-2',
                 stack_name='some-stack-display-name-2',
             ),
@@ -248,7 +248,7 @@ def test_get_exports_from_assembly_with_stages(cdk_out_mock, cdk_template_mock, 
 def test_get_exports_from_assembly_grabs_stack_name_first(cdk_out_mock, cdk_manifest_mock):
     expected = {
         'some-export-name-1': [
-            ExportData(
+            NodeData(
                 export_name='some-export-name-1',
                 stack_name='some-stack-name-1',
             ),

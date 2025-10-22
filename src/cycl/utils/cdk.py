@@ -4,7 +4,7 @@ import json
 from logging import getLogger
 from pathlib import Path
 
-from cycl.models.export_data import ExportData
+from cycl.models.export_data import NodeData
 
 log = getLogger(__name__)
 
@@ -72,7 +72,7 @@ def __validate_cdk_out_path(cdk_out_path: Path) -> Path:
     return cdk_out_path
 
 
-def get_exports_from_assembly(cdk_out_path: Path) -> dict[str, list[ExportData]]:
+def get_exports_from_assembly(cdk_out_path: Path) -> dict[str, list[NodeData]]:
     """Map an export name to a list of stacks which import it from the cloud assembly.
 
     function does not take into consideration exports defined in the assembly
@@ -82,7 +82,7 @@ def get_exports_from_assembly(cdk_out_path: Path) -> dict[str, list[ExportData]]
     """
     cdk_out_path = __validate_cdk_out_path(cdk_out_path)
 
-    stack_import_mapping: dict[str, list[ExportData]] = {}
+    stack_import_mapping: dict[str, list[NodeData]] = {}
     for template_file in cdk_out_path.rglob('*.template.json'):
         log.info('Processing template: %s', template_file)
         imported_export_names = __get_import_values_from_template(template_file)
@@ -98,7 +98,7 @@ def get_exports_from_assembly(cdk_out_path: Path) -> dict[str, list[ExportData]]
             log.info('stack name found: %s', stack_name)
             for export_name in imported_export_names:
                 stack_import_mapping.setdefault(export_name, []).append(
-                    ExportData(
+                    NodeData(
                         stack_name=stack_name,
                         export_name=export_name,
                     )
