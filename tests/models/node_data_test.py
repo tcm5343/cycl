@@ -3,13 +3,12 @@ from unittest.mock import Mock, call, patch
 import pytest
 from botocore.exceptions import ClientError
 
-import cycl.models.node_data as node_data_module
 from cycl.models.node_data import NodeData
 
 
 @pytest.fixture
 def mock_parse_name_from_id():
-    with patch.object(node_data_module, 'parse_name_from_id') as mock:
+    with patch.object(NodeData, 'parse_name_from_id') as mock:
         mock.side_effect = lambda x: f'{x}-parsed-name-from-id'
         yield mock
 
@@ -21,7 +20,7 @@ def cfn_client_mock():
 
 @pytest.fixture
 def mock_boto3(cfn_client_mock):
-    with patch.object(node_data_module, 'boto3') as mock:
+    with patch.object(NodeData, 'boto3') as mock:
 
         def client_side_effect_func(service, **_kwargs):
             if service == 'cloudformation':
