@@ -9,8 +9,8 @@ from cycl.models.node_data import NodeData
 
 @pytest.fixture
 def mock_parse_name_from_id():
-    with patch.object(NodeData, 'parse_name_from_id') as mock:
-        mock.side_effect = lambda stack_id: f'{stack_id}-name'
+    with patch.object(node_data_module, 'parse_name_from_id') as mock:
+        mock.side_effect = lambda x: f'{x}-parsed-name-from-id'
         yield mock
 
 
@@ -32,19 +32,6 @@ def mock_boto3(cfn_client_mock):
         yield mock
 
 
-@pytest.mark.parametrize(
-    ('stack_id', 'expected'),
-    [
-        ('arn:aws:cloudformation:us-east-1:000000000000:stack/template-1/05a85f80', 'template-1'),
-        ('/', ''),
-        ('', ''),
-    ],
-)
-def test_parse_name_from_id(stack_id, expected):
-    actual = NodeData.parse_name_from_id(stack_id)
-    assert actual == expected
-
-
 @pytest.mark.usefixtures('mock_parse_name_from_id')
 @pytest.mark.parametrize(
     ('list_exports_return', 'expected_exports'),
@@ -53,7 +40,7 @@ def test_parse_name_from_id(stack_id, expected):
             [{'ExportingStackId': 'some-exporting-stack-id', 'Name': 'some-name', 'Value': 'some-value'}],
             {
                 'some-name': NodeData(
-                    stack_name='some-exporting-stack-id-name',
+                    stack_name='some-exporting-stack-id-parsed-name-from-id',
                     stack_id='some-exporting-stack-id',
                     export_name='some-name',
                     export_value='some-value',
@@ -88,13 +75,13 @@ def test_get_all_exports_uses_next_token(mock_boto3, cfn_client_mock):
     export2 = {'ExportingStackId': 'some-exporting-stack-id-2', 'Name': 'some-name-2', 'Value': 'some-value-2'}
     expected_exports = {
         export1['Name']: NodeData(
-            stack_name='some-exporting-stack-id-1-name',
+            stack_name='some-exporting-stack-id-1-parsed-name-from-id',
             stack_id='some-exporting-stack-id-1',
             export_name='some-name-1',
             export_value='some-value-1',
         ),
         export2['Name']: NodeData(
-            stack_name='some-exporting-stack-id-2-name',
+            stack_name='some-exporting-stack-id-2-parsed-name-from-id',
             stack_id='some-exporting-stack-id-2',
             export_name='some-name-2',
             export_value='some-value-2',
@@ -211,7 +198,7 @@ def test_get_all_imports_raises_client_error(mock_boto3, cfn_client_mock):
             },
             {
                 'some-name': NodeData(
-                    stack_name='some-exporting-stack-id-name',
+                    stack_name='some-exporting-stack-id-parsed-name-from-id',
                     stack_id='some-exporting-stack-id',
                     export_name='some-name',
                     export_value='some-value',

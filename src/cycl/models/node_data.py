@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING
 import boto3
 from botocore.exceptions import ClientError
 
+from cycl.utils.cfn import parse_name_from_id
+
 if TYPE_CHECKING:
     from mypy_boto3_cloudformation import CloudFormationClient
     from mypy_boto3_cloudformation.type_defs import ListExportsOutputTypeDef
@@ -14,6 +16,8 @@ log = getLogger(__name__)
 
 
 class NodeData:
+    """Data collected to be used in graph creation."""
+
     def __init__(
         self,
         stack_name: str,
@@ -53,7 +57,7 @@ class NodeData:
         """
         return {
             export['Name']: cls(
-                stack_name=cls.parse_name_from_id(export['ExportingStackId']),
+                stack_name=parse_name_from_id(export['ExportingStackId']),
                 stack_id=export['ExportingStackId'],
                 export_name=export['Name'],
                 export_value=export['Value'],
@@ -140,23 +144,3 @@ class NodeData:
             )
             log.warning(warning_msg)
         return self
-
-    @staticmethod
-    def parse_name_from_id(stack_id: str) -> str:
-        """Extract the stack name from a given stack ID.
-
-        Args:
-            stack_id: The full stack ID, typically in the format
-                'arn:aws:cloudformation:region:account-id:stack/stack-name/guid'.
-
-        Returns:
-            The extracted stack name, or an empty string if parsing fails.
-
-        Note:
-            Logs a warning if the stack ID format is unexpected.
-        """
-        try:
-            return stack_id.split('/')[1]
-        except IndexError:
-            log.warning('Unable to parse name from stack_id: %s', stack_id)
-            return ''
