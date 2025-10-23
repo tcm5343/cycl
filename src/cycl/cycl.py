@@ -88,7 +88,7 @@ def build_graph(  # noqa: PLR0913
     )
 
     log.info('building dependency graph from graph data')
-    dep_graph = nx.MultiDiGraph()
+    dep_graph: nx.MultiDiGraph = nx.MultiDiGraph()
 
     for export in graph_data.values():
         export_key = node_key_fn(export)
