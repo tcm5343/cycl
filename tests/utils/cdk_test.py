@@ -6,7 +6,7 @@ from unittest.mock import patch
 import pytest
 
 import cycl.utils.cdk as cdk_module
-from cycl.models.export_data import NodeData
+from cycl.models.node_data import NodeData
 from cycl.utils.cdk import InvalidCdkOutPathError, get_exports_from_assembly
 
 

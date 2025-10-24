@@ -6,7 +6,7 @@ import pytest
 
 import cycl.cycl as cycl_module
 from cycl.cycl import build_graph, get_graph_data
-from cycl.models.export_data import NodeData
+from cycl.models.node_data import NodeData
 from cycl.utils.testing import is_circular_reversible_permutation
 
 
@@ -25,13 +25,6 @@ def mock_config():
 @pytest.fixture(autouse=True)
 def mock_session():
     with patch.object(cycl_module, 'Session') as mock:
-        yield mock
-
-
-@pytest.fixture(autouse=True)
-def mock_parse_name_from_id():
-    with patch.object(NodeData, 'parse_name_from_id', autospec=True) as mock:
-        mock.side_effect = lambda x: f'{x}-name'
         yield mock
 
 
@@ -794,6 +787,62 @@ def test_build_graph_returns_some_graph_with_node_data(subtests, mock_get_graph_
         {'node_key': 'some-exporting-stack-id-1-name', 'node_data': graph_data['some-name-1']},
         {'node_key': 'some-importing-stack-name-1', 'node_data': graph_data['some-name-1'].importing_stacks[0]},
         {'node_key': 'some-importing-stack-name-2', 'node_data': graph_data['some-name-1'].importing_stacks[1]},
+    )
+
+    actual_graph = build_graph()
+
+    for expected_node in expected_nodes:
+        with subtests.test(msg='assert graph has node with attrs', expected_node=expected_node):
+            assert actual_graph.nodes[expected_node['node_key']]['node_data'] == {expected_node['node_data']}
+
+
+def test_build_graph_returns_some_graph_with_multiple_node_data(subtests, mock_get_graph_data):
+    """Occurs when key func reduces two instances of NodeData to a single node in the graph."""
+    graph_data = {
+        'some-export-name-1': NodeData(
+            stack_name='some-exporting-stack-name-1',
+            stack_id='some-exporting-stack-id-1',
+            export_name='some-export-name-1',
+            export_value='some-value-1',
+            importing_stacks=[
+                NodeData(
+                    stack_name='some-importing-stack-name-1',
+                ),
+                NodeData(
+                    stack_name='some-importing-stack-name-2',
+                ),
+            ],
+        ),
+        'some-export-name-2': NodeData(
+            stack_name='some-exporting-stack-name-1',
+            stack_id='some-exporting-stack-id-1',
+            export_name='some-export-name-2',
+            export_value='some-value-2',
+            importing_stacks=[
+                NodeData(
+                    stack_name='some-importing-stack-name-1',
+                ),
+            ],
+        ),
+    }
+    mock_get_graph_data.return_value = graph_data
+
+    expected_nodes = (
+        {
+            'node_key': 'some-exporting-stack-name-1',
+            'node_data': {
+                graph_data['some-export-name-1'],
+                graph_data['some-export-name-2'],
+            },
+        },
+        {
+            'node_key': 'some-importing-stack-name-1',
+            'node_data': {
+                graph_data['some-export-name-1'].importing_stacks[0],
+                # testing de-duplication here too
+            },
+        },
+        {'node_key': 'some-importing-stack-name-2', 'node_data': {graph_data['some-export-name-1'].importing_stacks[1]}},
     )
 
     actual_graph = build_graph()
