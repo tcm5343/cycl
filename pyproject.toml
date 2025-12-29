@@ -143,14 +143,14 @@ omit = [
 log_cli_level = 'INFO'
 addopts = ['--import-mode=importlib']
 
-[tool.tox]
-env_list = ['py39', 'py310', 'py311', 'py312', 'py313']
-skip_missing_interpreters = false
+# [tool.tox]
+# env_list = ['py39', 'py310', 'py311', 'py312', 'py313']
+# skip_missing_interpreters = false
 
-[tool.tox.env_run_base]
-allowlist_externals = ['make']
-package = 'editable'
-deps = ['.[test]']
-commands = [
-    ['make', 'test', 'ARGS={posargs} tests']
-]
+# [tool.tox.env_run_base]
+# allowlist_externals = ['make']
+# package = 'editable'
+# deps = ['.[test]']
+# commands = [
+#     ['make', 'test', 'ARGS={posargs} tests']
+# ]
