@@ -9,7 +9,7 @@ import networkx as nx
 from botocore.config import Config
 from botocore.session import Session
 
-from cycl.models.export_data import NodeData
+from cycl.models import NodeData
 from cycl.utils.cdk import get_exports_from_assembly
 
 if TYPE_CHECKING:
@@ -43,7 +43,7 @@ def get_graph_data(
     exports = NodeData.get_all_exports(cfn_client=cfn_client)
     for export_name, importing_stacks in cdk_out_imports.items():
         if export_name not in exports:
-            log.warning(
+            log.debug(
                 'found an export (%s) which has not been deployed yet about to be imported stack(s): (%s)',
                 export_name,
                 importing_stacks,
@@ -57,6 +57,15 @@ def get_graph_data(
         if len(export.importing_stacks) == 0:
             log.warning('Export found with no import: %s from %s', export.export_name, export.stack_name)
     return exports
+
+
+def __add_node_data(graph: nx.MultiDiGraph, key: Hashable, data: NodeData) -> None:
+    if key not in graph:
+        graph.add_node(key, node_data={data})
+        return
+
+    node_data: set[NodeData] = graph.nodes[key].setdefault('node_data', set())
+    node_data.add(data)
 
 
 def build_graph(  # noqa: PLR0913
@@ -86,7 +95,7 @@ def build_graph(  # noqa: PLR0913
         if export_key in nodes_to_ignore:
             continue
 
-        dep_graph.add_node(export_key, node_data=export)
+        __add_node_data(dep_graph, export_key, export)
 
         for importing_stack in export.importing_stacks:
             importing_key = node_key_fn(importing_stack)
@@ -94,7 +103,7 @@ def build_graph(  # noqa: PLR0913
                 edge = (export_key, importing_key)
                 if list(edge) not in edges_to_ignore:
                     dep_graph.add_edge(*edge)
-                    dep_graph.add_node(importing_key, node_data=importing_stack)
+                    __add_node_data(dep_graph, importing_key, importing_stack)
 
     if remove_selfloops:
         dep_graph.remove_edges_from(nx.selfloop_edges(dep_graph))
