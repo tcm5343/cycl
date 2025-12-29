@@ -47,7 +47,7 @@ jobs:
       fail-fast: false
       matrix:
         os: ['ubuntu-latest']
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14']
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
@@ -57,13 +57,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
 
-      - name: setup tox
-        run: pip install tox
-
       - name: test
-        run: |
-          TOXENV="py$(echo ${{ matrix.python-version }} | sed 's/\.//')"
-          tox -e "${TOXENV}"
+        run: make test PYTHON_VERSION=${{ matrix.python-version }}
 
   build:
     needs: [vars, code-quality, unit-tests]

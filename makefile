@@ -1,148 +1,96 @@
 SHELL := /bin/bash
 .SHELLFLAGS = -ec
-.DEFAULT_GOAL = help
-.PHONY = help clean format test format validate doc-serve install-test-deps install-doc-deps install-validation-deps build-e2e-infra destroy-e2e-infra
+.PHONY = clean format test validate doc-serve \
+        install-test-deps install-doc-deps install-validation-deps install-e2e-deps \
+        build-e2e-infra destroy-e2e-infra run-e2e
 
 export CDK_DISABLE_CLI_TELEMETRY = true
-export PIP_DISABLE_PIP_VERSION_CHECK = true
+export UV_NO_PROGRESS = true
+# export UV_PYTHON = .venv/bin/python
 
-TEST_DEPS_CACHE := .venv/test-deps.cache
-DOC_DEPS_CACHE := .venv/docs-deps.cache
-VALIDATION_DEPS_CACHE := .venv/validation-deps.cache
-E2E_DEPS_CACHE := .venv/e2e-deps.cache
-
+VENV := .venv
 BRANCH_NAME := $(shell git rev-parse --abbrev-ref HEAD)
 REPO_NAME := $(shell basename -s .git `git config --get remote.origin.url`)
+PYTHON_VERSION ?= 3.10
 
 help:
 	@egrep -h '\s##\s' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m  %-30s\033[0m %s\n", $$1, $$2}'
 
-$(TEST_DEPS_CACHE): pyproject.toml
-	@echo "Installing development dependencies..."
-	@test -d .venv || python3 -m venv .venv
+$(VENV):
+	uv venv $(VENV)
+
+lock: pyproject.toml
+	uv lock
+
+install: install-test-deps install-doc-deps install-validation-deps install-e2e-deps
+
+install-test-deps: pyproject.toml uv.lock | $(VENV)  ## install test deps
+	uv sync --extra test
+
+install-doc-deps: pyproject.toml uv.lock | $(VENV)  ## install doc deps
+	uv sync --extra doc
+
+install-validation-deps: pyproject.toml uv.lock | $(VENV)  ## install validation deps
+	uv sync --extra validation
+
+install-e2e-deps: pyproject.toml uv.lock | $(VENV) ## install e2e deps
+	uv sync --extra e2e
+
+format: install-test-deps ## format the project
+	uv run ruff format
+	uv run ruff check --fix
+
+validate: install-validation-deps ## validate the projects format, lint, and types
+	uv run ruff format --check
+	uv run ruff check
+	uv run mypy ./src/
+
+test: install-test-deps ## run unit tests
+	PYTHONPATH=./src uv run --python $(PYTHON_VERSION) --isolated --with-editable '.[test]' pytest -n 0 tests/ --cov=./src/
+
+# doc-serve: install-doc-deps ## serve the documentation locally
+# 	uv run --python $(VENV)/bin/python sphinx-autobuild -M html docs docs/_build
+
+build-e2e-infra: install-e2e-deps ## build the e2e testing infra in AWS
 	@( \
-		source ./.venv/bin/activate; \
-		pip install --editable .[test]; \
-		touch $(TEST_DEPS_CACHE); \
-	)
-
-install-test-deps: $(TEST_DEPS_CACHE)  ## Install development dependencies
-	@echo "Development dependencies have been installed..."
-
-$(DOC_DEPS_CACHE): pyproject.toml
-	@echo "Installing documentation dependencies..."
-	@test -d .venv || python3 -m venv .venv
-	@( \
-		source ./.venv/bin/activate; \
-		pip install --editable .[doc]; \
-		touch $(DOC_DEPS_CACHE); \
-	)
-
-install-doc-deps: $(DOC_DEPS_CACHE)  ## Install documentation dependencies
-	@echo "Documentation dependencies have been installed..."
-
-$(VALIDATION_DEPS_CACHE): pyproject.toml
-	@echo "Installing validation dependencies..."
-	@test -d .venv || python3 -m venv .venv
-	@( \
-		source ./.venv/bin/activate; \
-		pip install --editable .[validation]; \
-		touch $(VALIDATION_DEPS_CACHE); \
-	)
-
-install-validation-deps: $(VALIDATION_DEPS_CACHE)  ## Install validation dependencies
-	@echo "Validation deps have been installed..."
-
-$(E2E_DEPS_CACHE): pyproject.toml
-	@echo "Installing end to end testing dependencies..."
-	@test -d .venv || python3 -m venv .venv
-	@( \
-		source ./.venv/bin/activate; \
-		pip install --editable .[e2e]; \
-		touch $(E2E_DEPS_CACHE); \
-	)
-
-install-e2e-deps: $(E2E_DEPS_CACHE)  ## Install end to end testing dependencies
-	@echo "End to end testing dependencies have been installed..."
-
-format: install-test-deps  ## Format the project
-	@( \
-		source ./.venv/bin/activate; \
-		ruff format; \
-		ruff check --fix; \
-	)
-
-validate: install-validation-deps  ## Run the code quality checks
-	@( \
-		source ./.venv/bin/activate; \
-		ruff format --check; \
-		ruff check; \
-		python3 -m mypy ./src/; \
-	)
-
-test: install-test-deps  ## Run unit tests
-	@( \
-		source ./.venv/bin/activate; \
-		export PYTHONPATH=./src/; \
-		pytest tests/ --cov=./src/; \
-	)
-
-doc-serve: install-doc-deps ## Serve the documentation locally
-	@( \
-		source ./.venv/bin/activate; \
-		sphinx-autobuild -M html docs docs/_build; \
-	)
-
-clean:  ## Clean generated project files
-	@rm -f .coverage
-	@rm -rf ./.ruff_cache
-	@rm -rf ./.pytest_cache
-	@rm -rf ./.venv
-	@rm -rf ./build
-	@rm -rf ./.tox
-	@rm -rf ./dist
-	@rm -rf ./.mypy_cache
-	@rm -rf ./docs/_build
-	@find . -type d -name "__pycache__" -exec rm -rf {} +
-
-build-e2e-infra: install-e2e-deps  ## Deploy the infrastructure needed for E2E testing in AWS
-	@( \
-		source ./.venv/bin/activate; \
 		pushd e2e/infra; \
 		export PYTHONPATH=.; \
-		\
 		rm -rf ./cdk.out; \
-		cdk synth --output cdk.out; \
-		cdk deploy --app cdk.out CyclicStage/** --ci --require-approval never; \
-		cdk deploy --app cdk.out AcyclicStage/** --ci --require-approval never; \
-		cdk deploy --app cdk.out BootstrapE2EStack --ci --require-approval never; \
-		\
+		uv run cdk synth --output cdk.out; \
+		uv run cdk deploy --app cdk.out CyclicStage/** --ci --require-approval never; \
+		uv run cdk deploy --app cdk.out AcyclicStage/** --ci --require-approval never; \
+		uv run cdk deploy --app cdk.out BootstrapE2EStack --ci --require-approval never; \
 		rm -rf ./cdk.out; \
-		cdk synth --output cdk.out -c create_cycle=true; \
-		cdk deploy --app cdk.out CyclicStage/** --ci --require-approval never; \
-		cdk deploy --app cdk.out AcyclicStage/** --ci --require-approval never; \
+		uv run cdk synth --output cdk.out -c create_cycle=true; \
+		uv run cdk deploy --app cdk.out CyclicStage/** --ci --require-approval never; \
+		uv run cdk deploy --app cdk.out AcyclicStage/** --ci --require-approval never; \
+		popd; \
 	)
 
-destroy-e2e-infra: install-e2e-deps  ## Destroy the infrastructure for E2E testing in AWS, removing cycles and then stacks
+destroy-e2e-infra: install-e2e-deps ## tear down the e2e testing infra in AWS
 	@( \
-		source ./.venv/bin/activate; \
 		pushd e2e/infra; \
 		export PYTHONPATH=.; \
-		\
 		rm -rf ./cdk.out; \
-		cdk synth --output cdk.out; \
-		cdk deploy --app cdk.out CyclicStage/** --ci --require-approval never; \
-		cdk deploy --app cdk.out AcyclicStage/** --ci --require-approval never; \
-		\
-		cdk destroy CyclicStage/** --ci --force; \
-		cdk destroy AcyclicStage/** --ci --force; \
-		cdk destroy BootstrapE2EStack --ci --force; \
+		uv run cdk synth --output cdk.out; \
+		uv run cdk deploy --app cdk.out CyclicStage/** --ci --require-approval never; \
+		uv run cdk deploy --app cdk.out AcyclicStage/** --ci --require-approval never; \
+		uv run cdk destroy CyclicStage/** --ci --force; \
+		uv run cdk destroy AcyclicStage/** --ci --force; \
+		uv run cdk destroy BootstrapE2EStack --ci --force; \
+		popd; \
 	)
 
-run-e2e: install-e2e-deps  ## Run E2E tests
+run-e2e: install-e2e-deps ## run e2e tests in AWS
 	@( \
-		source ./.venv/bin/activate; \
 		pushd e2e; \
-		\
-		pytest ./tests/; \
+		uv run pytest ./tests/; \
+		popd; \
 	)
+
+clean: ## clean temp files from directory
+	rm -rf $(VENV)
+	rm -rf build dist .tox
+	rm -rf docs/_build
+	rm -rf .ruff_cache .pytest_cache .mypy_cache
+	find . -type d -name "__pycache__" -exec rm -rf {} +
