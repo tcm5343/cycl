@@ -243,6 +243,7 @@ jobs:
                 --index-url "$INDEX_URL" \
                 --extra-index-url "$EXTRA_INDEX_URL" \
                 --index-strategy unsafe-best-match \
+                --no-cache-dir \
                 "$PACKAGE"; then
               echo "Package installed successfully!"
               break
