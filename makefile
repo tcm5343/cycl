@@ -22,19 +22,20 @@ $(VENV):
 lock: pyproject.toml
 	uv lock
 
-install: install-test-deps install-doc-deps install-validation-deps install-e2e-deps
+install: | $(VENV)
+	uv sync --all-extras
 
-install-test-deps: pyproject.toml uv.lock | $(VENV)  ## install test deps
+install-test-deps: pyproject.toml uv.lock  ## install test deps
 	uv sync --extra test
 
-install-doc-deps: pyproject.toml uv.lock | $(VENV)  ## install doc deps
+install-doc-deps: pyproject.toml uv.lock ## install doc deps
 	uv sync --extra doc
 
-install-validation-deps: pyproject.toml uv.lock | $(VENV)  ## install validation deps
+install-validation-deps: pyproject.toml uv.lock ## install validation deps
 	uv sync --extra validation
 
-install-e2e-deps: pyproject.toml uv.lock | $(VENV) ## install e2e deps
-	uv sync --extra e2e
+# install-e2e-deps: pyproject.toml uv.lock ## install e2e deps
+# 	uv pip install --requirement ./e2e/requirements-dev.txt
 
 format: install-test-deps ## format the project
 	uv run ruff format
@@ -46,7 +47,7 @@ validate: install-validation-deps ## validate the projects format, lint, and typ
 	uv run mypy ./src/
 
 test: install-test-deps ## run unit tests
-	PYTHONPATH=./src uv run --python $(PYTHON_VERSION) --isolated --with-editable '.[test]' pytest -n 0 tests/ --cov=./src/
+	PYTHONPATH=./src uv run --isolated --with-editable '.[test]' pytest -n 0 tests/ --cov=./src/
 
 # doc-serve: install-doc-deps ## serve the documentation locally
 # 	uv run --python $(VENV)/bin/python sphinx-autobuild -M html docs docs/_build
@@ -81,12 +82,9 @@ destroy-e2e-infra: install-e2e-deps ## tear down the e2e testing infra in AWS
 		popd; \
 	)
 
-run-e2e: install-e2e-deps ## run e2e tests in AWS
-	@( \
-		pushd e2e; \
-		uv run pytest ./tests/; \
-		popd; \
-	)
+run-e2e: | $(VENV) ## run e2e tests in AWS, using
+	uv pip install --requirement ./e2e/requirements-dev.txt
+	uv run --no-project pytest ./e2e/tests/
 
 clean: ## clean temp files from directory
 	rm -rf $(VENV)
