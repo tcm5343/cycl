@@ -224,7 +224,7 @@ jobs:
           role-to-assume: arn:aws:iam::929185124050:role/e2e-testing-role
           role-session-name: e2e-testing-role
 
-      - name: install cycl
+      - name: install cycl from pypi test
         shell: bash
         env:
           TEST_VERSION: ${{ needs.create-release.outputs.tag }}
@@ -236,7 +236,7 @@ jobs:
             --index-strategy unsafe-best-match \
             cycl=="${TEST_VERSION#v}"
 
-      - name: Run e2e
+      - name: run e2e
         run: make run-e2e
 
   deploy-pypi:
