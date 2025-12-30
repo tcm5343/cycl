@@ -117,7 +117,7 @@ jobs:
           GIT_API_TAGGING: false
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PRERELEASE_SUFFIX: b
-          PRERELEASE: ${{ needs.vars.outputs.is_push_to_main == 'false' }}
+          PRERELEASE: ${{ needs.workflow-vars.outputs.is_push_to_main == 'false' }}
           WITH_V: true
 
       - name: Create release from tag
@@ -236,7 +236,7 @@ jobs:
           INDEX_URL="https://test.pypi.org/simple/"
           EXTRA_INDEX_URL="https://pypi.org/simple"
           MAX_ATTEMPTS=12
-          SLEEP=5
+          SLEEP=15
 
           for i in $(seq 1 $MAX_ATTEMPTS); do
             if uv pip install \
