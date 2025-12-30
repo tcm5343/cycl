@@ -70,6 +70,7 @@ jobs:
         run: make test PYTHON_VERSION=${{ matrix.python-version }}
 
   build-docs:
+    needs: vars
     runs-on: ubuntu-latest
     permissions:
       contents: write
