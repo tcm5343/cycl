@@ -251,6 +251,7 @@ jobs:
         env:
           TEST_VERSION: ${{ needs.create-release.outputs.tag }}
         run: |
+          make .venv
           uv pip install \
             --index-url https://test.pypi.org/simple/ \
             --extra-index-url https://pypi.org/simple \
