@@ -262,4 +262,4 @@ jobs:
           version: '0.9.20'
 
       - name: publish
-        run: uv publish --publish-url ${{ vars.PYPI_REPOSITORY_URL }}
+        run: uv publish
