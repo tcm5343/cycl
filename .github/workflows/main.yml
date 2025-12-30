@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  vars:
+  workflow-vars:
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -24,96 +24,262 @@ jobs:
           echo "is_push_to_main=${is_push_to_main}" >> $GITHUB_OUTPUT
 
   code-quality:
-    needs: vars
+    needs: workflow-vars
     permissions:
       contents: read
     runs-on: 'ubuntu-latest'
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548
         with:
-          python-version: '3.11'
-          cache: 'pip'
+          python-version: '3.10'
+
+      - name: install uv
+        uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867
+        with:
+          version: '0.9.20'
 
       - name: validate
         run: make validate
 
   unit-tests:
-    needs: vars
+    needs: workflow-vars
     permissions:
       contents: read
     strategy:
       fail-fast: false
       matrix:
         os: ['ubuntu-latest']
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14']
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v6
+      - name: setup python ${{ matrix.python-version }}
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'pip'
 
-      - name: setup tox
-        run: pip install tox
+      - name: install uv
+        uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867
+        with:
+          version: '0.9.20'
 
-      - name: test
-        run: |
-          TOXENV="py$(echo ${{ matrix.python-version }} | sed 's/\.//')"
-          tox -e "${TOXENV}"
+      - name: run tests
+        run: make test PYTHON_VERSION=${{ matrix.python-version }}
 
-  build:
-    needs: [vars, code-quality, unit-tests]
-    uses: ./.github/workflows/build.yml
-    secrets: inherit
-    permissions:
-      contents: write  # needed for tag creation
-      id-token: write   # needed for publishing to PyPI
-    with:
-      deploy-prod: ${{ needs.vars.outputs.is_push_to_main == 'true' }}
-
-  deploy:
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
-    needs: [vars, build]
-    uses: ./.github/workflows/deploy.yml
-    secrets: inherit
+  build-docs:
+    needs: workflow-vars
+    runs-on: ubuntu-latest
     permissions:
       contents: write
-      pages: write      # to deploy to Pages
-      id-token: write   # to verify the deployment originates from an appropriate source
-    with:
-      deploy-prod: ${{ needs.vars.outputs.is_push_to_main == 'true' }}
+    steps:
+      - uses: actions/checkout@v5
 
+      - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548
+        with:
+          python-version: '3.10'
+          cache: 'pip'
 
-  # e2e-test:
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          ./.venv/bin/python -m pip install .[doc]
+
+      - name: Sphinx build
+        run: ./.venv/bin/sphinx-build docs docs/_build --builder html --fresh-env
+
+      - name: Upload static files as artifact
+        id: deployment
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: docs/_build/
+
+  create-release:
+    needs: [workflow-vars, build-docs, unit-tests, code-quality]
+    if: ${{ needs.workflow-vars.outputs.is_push_to_main == 'true'|| github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.new_tag }}
+    permissions:
+      contents: write  # needed for tag creation
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: '0'  # fetches tags
+
+      - name: Bump version and push tag
+        id: tag
+        uses: anothrNick/github-tag-action@4ed44965e0db8dab2b466a16da04aec3cc312fd8  # v1.75.0
+        env:
+          DEFAULT_BUMP: patch
+          GIT_API_TAGGING: false
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PRERELEASE_SUFFIX: b
+          PRERELEASE: ${{ needs.workflow-vars.outputs.is_push_to_main == 'false' }}
+          WITH_V: true
+
+      - name: Create release from tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ steps.tag.outputs.new_tag }}
+        run: |
+          gh release create "${tag}" \
+              --repo="$GITHUB_REPOSITORY" \
+              --title="${tag#v}" \
+              --generate-notes
+
+  build-pypi-dist:
+    needs: [create-release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Checkout the tagged version
+        run: git checkout refs/tags/${{ needs.create-release.outputs.tag }}
+
+      - name: install uv
+        uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867
+        with:
+          version: '0.9.20'
+
+      - name: Build distribution
+        run: uv build
+
+      - name: Upload distribution artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pypi-artifact
+          path: dist/
+          retention-days: 7
+
+  # deploy-docs:
+  #   needs: [workflow-vars, build-docs]
+  #   if: ${{ needs.workflow-vars.outputs.is_push_to_main == 'true' }}
   #   runs-on: ubuntu-latest
+  #   environment:
+  #     name: github-pages
+  #     url: ${{ steps.deployment.outputs.page_url }}
   #   permissions:
-  #     id-token: write # This is required for requesting the JWT
-  #     contents: read  # This is required for actions/checkout
+  #     pages: write      # to deploy to Pages
+  #     id-token: write   # to verify the deployment originates from an appropriate source
   #   steps:
-  #     - uses: actions/checkout@v5
+  #     - name: Deploy to GitHub Pages
+  #       id: deployment
+  #       uses: actions/deploy-pages@v4
 
-  #     - uses: actions/setup-python@v6
-  #       with:
-  #         python-version: "3.11"
-  #         cache: 'pip'
+  deploy-pypi-test:
+    needs: [build-pypi-dist, workflow-vars]
+    if: ${{ needs.workflow-vars.outputs.is_push_to_main == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    environment:
+      name: test
+      url: ${{ vars.PYPI_PROJECT_URL }}
+    permissions:
+      id-token: write   # needed for publishing to PyPI
+      contents: read
+    steps:
+      - name: Download built distribution
+        uses: actions/download-artifact@v5
+        with:
+          name: pypi-artifact
+          path: dist/
 
-  #     - uses: actions/setup-node@v4
-  #       with:
-  #         node-version: '22'
+      - name: install uv
+        uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867
+        with:
+          version: '0.9.20'
 
-  #     - name: Install Python dependencies and CDK
-  #       run: |
-  #         npm install -g aws-cdk
+      - name: publish
+        run: uv publish --publish-url ${{ vars.PYPI_REPOSITORY_URL }}
 
-  #     - uses: aws-actions/configure-aws-credentials@v4
-  #       with:
-  #         aws-region: us-east-1
-  #         role-to-assume: arn:aws:iam::929185124050:role/e2e-role
-  #         role-session-name: e2e-testing-role
+  e2e-pypi-test:
+    needs: [create-release, deploy-pypi-test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: aws
+    permissions:
+      id-token: write # This is required for requesting the JWT
+      contents: read  # This is required for actions/checkout
+    steps:
+      - uses: actions/checkout@v5
 
-  #     - name: Run e2e
-  #       run: make run-e2e
+      - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548
+        with:
+          python-version: "3.10"
+
+      - name: install uv
+        uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867
+        with:
+          version: '0.9.20'
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::929185124050:role/e2e-testing-role
+          role-session-name: e2e-testing-role
+
+      - name: install cycl from pypi test
+        shell: bash
+        env:
+          TEST_VERSION: ${{ needs.create-release.outputs.tag }}
+        run: |
+          make .venv
+
+          PACKAGE="cycl==${TEST_VERSION#v}"
+          INDEX_URL="https://test.pypi.org/simple/"
+          EXTRA_INDEX_URL="https://pypi.org/simple"
+          MAX_ATTEMPTS=12
+          SLEEP=15
+
+          for i in $(seq 1 $MAX_ATTEMPTS); do
+            if uv pip install \
+                --index-url "$INDEX_URL" \
+                --extra-index-url "$EXTRA_INDEX_URL" \
+                --index-strategy unsafe-best-match \
+                "$PACKAGE"; then
+              echo "Package installed successfully!"
+              break
+            fi
+            echo "Attempt $i/$MAX_ATTEMPTS failed. Retrying in $SLEEP seconds..."
+            sleep $SLEEP
+          done
+
+          if ! uv pip show cycl >/dev/null 2>&1; then
+            echo "Failed to install $PACKAGE from Test PyPI after $((MAX_ATTEMPTS * SLEEP)) seconds."
+            exit 1
+          fi
+
+      - name: run e2e
+        run: make run-e2e
+
+  deploy-pypi-prod:
+    needs: [e2e-pypi-test, workflow-vars]
+    if: ${{ needs.workflow-vars.outputs.is_push_to_main == 'true' }}
+    runs-on: ubuntu-latest
+    environment:
+      name: prod
+      url: ${{ vars.PYPI_PROJECT_URL }}
+    permissions:
+      id-token: write   # needed for publishing to PyPI
+      contents: read
+    steps:
+      - name: Download built distribution
+        uses: actions/download-artifact@v5
+        with:
+          name: pypi-artifact
+          path: dist/
+
+      - name: install uv
+        uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867
+        with:
+          version: '0.9.20'
+
+      - name: publish
+        run: uv publish
