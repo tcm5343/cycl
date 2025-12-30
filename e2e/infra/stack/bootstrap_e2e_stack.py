@@ -42,7 +42,9 @@ class BootstrapE2EStack(Stack):
             assumed_by=iam.WebIdentityPrincipal(
                 oidc_provider.open_id_connect_provider_arn,
                 conditions={
-                    'StringLike': {'token.actions.githubusercontent.com:sub': f'repo:{github_repo_name}:environment:aws'}
+                    'StringLike': {
+                        'token.actions.githubusercontent.com:sub': f'repo:{github_repo_name}:environment:aws'
+                    }
                 },
             ),
             description='E2E testing role, used in GH actions, to run cycl with.',

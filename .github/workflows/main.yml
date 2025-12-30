@@ -117,7 +117,7 @@ jobs:
           GIT_API_TAGGING: false
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PRERELEASE_SUFFIX: b
-          PRERELEASE: ${{ inputs.deploy-prod == 'false' }}
+          PRERELEASE: ${{ needs.vars.outputs.is_push_to_main == 'false' }}
           WITH_V: true
 
       - name: Create release from tag
@@ -238,7 +238,7 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: us-east-1
-          role-to-assume: arn:aws:iam::929185124050:role/e2e-role
+          role-to-assume: arn:aws:iam::929185124050:role/e2e-testing-role
           role-session-name: e2e-testing-role
 
       - name: install cycl
