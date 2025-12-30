@@ -154,3 +154,6 @@ addopts = ['--import-mode=importlib']
 # commands = [
 #     ['make', 'test', 'ARGS={posargs} tests']
 # ]
+
+# [tool.uv]
+# python = "3.10"

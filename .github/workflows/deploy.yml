@@ -29,6 +29,11 @@ jobs:
           name: pypi-artifact
           path: dist/
 
+      - name: install uv
+        uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867
+        with:
+          version: '0.9.20'
+
       - name: Publish distribution
         uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc  # v1.12.4
         with:
@@ -63,16 +68,16 @@ jobs:
           password: ${{ secrets.PYPI_PASSWORD }}
           attestations: "false"
 
-  doc:
-    if: ${{ inputs.deploy-prod == 'true' }}
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    permissions:
-      pages: write      # to deploy to Pages
-      id-token: write   # to verify the deployment originates from an appropriate source
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+  # doc:
+  #   if: ${{ inputs.deploy-prod == 'true' }}
+  #   runs-on: ubuntu-latest
+  #   environment:
+  #     name: github-pages
+  #     url: ${{ steps.deployment.outputs.page_url }}
+  #   permissions:
+  #     pages: write      # to deploy to Pages
+  #     id-token: write   # to verify the deployment originates from an appropriate source
+  #   steps:
+  #     - name: Deploy to GitHub Pages
+  #       id: deployment
+  #       uses: actions/deploy-pages@v4
