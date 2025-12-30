@@ -13,31 +13,6 @@ on:
         default: "false"
 
 jobs:
-  doc:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548
-        with:
-          python-version: '3.10'
-          cache: 'pip'
-
-      - name: Install dependencies
-        run: |
-          python -m venv .venv
-          ./.venv/bin/python -m pip install .[doc]
-
-      - name: Sphinx build
-        run: ./.venv/bin/sphinx-build docs docs/_build --builder html --fresh-env
-
-      - name: Upload static files as artifact
-        id: deployment
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: docs/_build/
 
   release:
     if: ${{ inputs.deploy-prod == 'true' || github.event_name == 'workflow_dispatch' }}
