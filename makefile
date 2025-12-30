@@ -6,7 +6,6 @@ SHELL := /bin/bash
 
 export CDK_DISABLE_CLI_TELEMETRY = true
 export UV_NO_PROGRESS = true
-# export UV_PYTHON = .venv/bin/python
 
 VENV := .venv
 BRANCH_NAME := $(shell git rev-parse --abbrev-ref HEAD)

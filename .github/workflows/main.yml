@@ -201,6 +201,7 @@ jobs:
   e2e-pypi-test:
     needs: [create-release, deploy-pypi-test]
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     environment:
       name: aws
     permissions:
@@ -230,16 +231,35 @@ jobs:
           TEST_VERSION: ${{ needs.create-release.outputs.tag }}
         run: |
           make .venv
-          uv pip install \
-            --index-url https://test.pypi.org/simple/ \
-            --extra-index-url https://pypi.org/simple \
-            --index-strategy unsafe-best-match \
-            cycl=="${TEST_VERSION#v}"
+
+          PACKAGE="cycl==${TEST_VERSION#v}"
+          INDEX_URL="https://test.pypi.org/simple/"
+          EXTRA_INDEX_URL="https://pypi.org/simple"
+          MAX_ATTEMPTS=12
+          SLEEP=5
+
+          for i in $(seq 1 $MAX_ATTEMPTS); do
+            if uv pip install \
+                --index-url "$INDEX_URL" \
+                --extra-index-url "$EXTRA_INDEX_URL" \
+                --index-strategy unsafe-best-match \
+                "$PACKAGE"; then
+              echo "Package installed successfully!"
+              break
+            fi
+            echo "Attempt $i/$MAX_ATTEMPTS failed. Retrying in $SLEEP seconds..."
+            sleep $SLEEP
+          done
+
+          if ! uv pip show cycl >/dev/null 2>&1; then
+            echo "Failed to install $PACKAGE from Test PyPI after $((MAX_ATTEMPTS * SLEEP)) seconds."
+            exit 1
+          fi
 
       - name: run e2e
         run: make run-e2e
 
-  deploy-pypi:
+  deploy-pypi-prod:
     needs: [e2e-pypi-test, workflow-vars]
     if: ${{ needs.workflow-vars.outputs.is_push_to_main == 'true' }}
     runs-on: ubuntu-latest
