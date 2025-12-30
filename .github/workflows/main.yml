@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  vars:
+  workflow-vars:
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -24,7 +24,7 @@ jobs:
           echo "is_push_to_main=${is_push_to_main}" >> $GITHUB_OUTPUT
 
   code-quality:
-    needs: vars
+    needs: workflow-vars
     permissions:
       contents: read
     runs-on: 'ubuntu-latest'
@@ -44,7 +44,7 @@ jobs:
         run: make validate
 
   unit-tests:
-    needs: vars
+    needs: workflow-vars
     permissions:
       contents: read
     strategy:
@@ -70,7 +70,7 @@ jobs:
         run: make test PYTHON_VERSION=${{ matrix.python-version }}
 
   build-docs:
-    needs: vars
+    needs: workflow-vars
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -97,8 +97,8 @@ jobs:
           path: docs/_build/
 
   create-release:
-    needs: [vars, build-docs, unit-tests, code-quality]
-    if: ${{ needs.vars.outputs.is_push_to_main == 'true'|| github.event_name == 'workflow_dispatch' }}
+    needs: [workflow-vars, build-docs, unit-tests, code-quality]
+    if: ${{ needs.workflow-vars.outputs.is_push_to_main == 'true'|| github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.tag.outputs.new_tag }}
@@ -158,46 +158,24 @@ jobs:
           path: dist/
           retention-days: 7
 
-  # build:
-  #   needs: [vars, code-quality, unit-tests, build-docs]
-  #   uses: ./.github/workflows/build.yml
-  #   secrets: inherit
+  # deploy-docs:
+  #   needs: [workflow-vars, build-docs]
+  #   if: ${{ needs.workflow-vars.outputs.is_push_to_main == 'true' }}
+  #   runs-on: ubuntu-latest
+  #   environment:
+  #     name: github-pages
+  #     url: ${{ steps.deployment.outputs.page_url }}
   #   permissions:
-  #     contents: write  # needed for tag creation
-  #     id-token: write   # needed for publishing to PyPI
-  #   with:
-  #     deploy-prod: ${{ needs.vars.outputs.is_push_to_main == 'true' }}
-
-  # deploy:
-  #   if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
-  #   needs: [vars, build]
-  #   uses: ./.github/workflows/deploy.yml
-  #   secrets: inherit
-  #   permissions:
-  #     contents: write
   #     pages: write      # to deploy to Pages
   #     id-token: write   # to verify the deployment originates from an appropriate source
-  #   with:
-  #     deploy-prod: ${{ needs.vars.outputs.is_push_to_main == 'true' }}
-
-  deploy-docs:
-    needs: build-docs
-    if: ${{ needs.vars.outputs.is_push_to_main == 'true' }}
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    permissions:
-      pages: write      # to deploy to Pages
-      id-token: write   # to verify the deployment originates from an appropriate source
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+  #   steps:
+  #     - name: Deploy to GitHub Pages
+  #       id: deployment
+  #       uses: actions/deploy-pages@v4
 
   deploy-pypi-test:
-    needs: [build-pypi-dist, vars]
-    if: ${{ needs.vars.outputs.is_push_to_main == 'true' || github.event_name == 'workflow_dispatch' }}
+    needs: [build-pypi-dist, workflow-vars]
+    if: ${{ needs.workflow-vars.outputs.is_push_to_main == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     environment:
       name: test
@@ -260,3 +238,28 @@ jobs:
 
       - name: Run e2e
         run: make run-e2e
+
+  deploy-pypi:
+    needs: [e2e-pypi-test, workflow-vars]
+    if: ${{ needs.workflow-vars.outputs.is_push_to_main == 'true' }}
+    runs-on: ubuntu-latest
+    environment:
+      name: prod
+      url: ${{ vars.PYPI_PROJECT_URL }}
+    permissions:
+      id-token: write   # needed for publishing to PyPI
+      contents: read
+    steps:
+      - name: Download built distribution
+        uses: actions/download-artifact@v5
+        with:
+          name: pypi-artifact
+          path: dist/
+
+      - name: install uv
+        uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867
+        with:
+          version: '0.9.20'
+
+      - name: publish
+        run: uv publish --publish-url ${{ vars.PYPI_REPOSITORY_URL }}
