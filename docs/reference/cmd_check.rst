@@ -6,7 +6,7 @@ cycl check
     :func: create_parser
     :prog: cycl
     :path: check
-    
+
     --ignore-nodes : @after
         .. math::
 

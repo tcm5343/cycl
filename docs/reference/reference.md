@@ -6,3 +6,10 @@
 
 cmd
 ```
+
+```{toctree}
+:maxdepth: 1
+:caption: SDK:
+
+sdk
+```
