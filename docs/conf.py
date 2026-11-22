@@ -1,21 +1,21 @@
-import sys
+# Docs are built with the package and its dependencies installed (`pip install .[doc]`),
+# so modules like boto3/networkx are imported for real (required by sphinx-argparse).
 
-# import os
-from unittest import mock
-
-MOCK_MODULES = ['boto3', 'networkx', 'botocore', 'botocore.config', 'botocore.exceptions']
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = mock.Mock()
-
+from datetime import datetime, timezone
+from importlib.metadata import version
 
 project = 'cycl'
-copyright = '2025, tcm5343'
 author = 'tcm5343'
-release = '0.2.2'
+copyright = f'{datetime.now(tz=timezone.utc).year}, {author}'
+release = version('cycl')
+version = release
 
 extensions = [
     'sphinx_rtd_theme',
     'sphinx.ext.autodoc',
+    'sphinx.ext.napoleon',
+    'sphinx.ext.viewcode',
+    'sphinx.ext.intersphinx',
     'sphinxarg.ext',
     'sphinx.ext.githubpages',
     'myst_parser',
@@ -25,4 +25,9 @@ templates_path = ['_templates']
 exclude_patterns = []
 
 html_theme = 'sphinx_rtd_theme'
-html_static_path = ['_static']
+
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+    'networkx': ('https://networkx.org/documentation/stable', None),
+}
+autodoc_typehints = 'description'

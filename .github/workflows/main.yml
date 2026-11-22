@@ -5,6 +5,7 @@ on:
     types: ['opened']
     branches: ['main']
   push:
+    paths-ignore: ['docs/**']  # docs-only changes are published by docs.yml, without a release
   workflow_dispatch:
 
 jobs:
@@ -73,13 +74,13 @@ jobs:
     needs: workflow-vars
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     steps:
       - uses: actions/checkout@v6
 
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
-          python-version: '3.10'
+          python-version: '3.9'  # minimum supported version
           cache: 'pip'
 
       - name: Install dependencies
@@ -88,13 +89,7 @@ jobs:
           ./.venv/bin/python -m pip install .[doc]
 
       - name: Sphinx build
-        run: ./.venv/bin/sphinx-build docs docs/_build --builder html --fresh-env
-
-      - name: Upload static files as artifact
-        id: deployment
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: docs/_build/
+        run: ./.venv/bin/sphinx-build docs docs/_build --builder html --fresh-env -W --keep-going
 
   create-release:
     needs: [workflow-vars, build-docs, unit-tests, code-quality]
@@ -158,20 +153,16 @@ jobs:
           path: dist/
           retention-days: 7
 
-  # deploy-docs:
-  #   needs: [workflow-vars, build-docs]
-  #   if: ${{ needs.workflow-vars.outputs.is_push_to_main == 'true' }}
-  #   runs-on: ubuntu-latest
-  #   environment:
-  #     name: github-pages
-  #     url: ${{ steps.deployment.outputs.page_url }}
-  #   permissions:
-  #     pages: write      # to deploy to Pages
-  #     id-token: write   # to verify the deployment originates from an appropriate source
-  #   steps:
-  #     - name: Deploy to GitHub Pages
-  #       id: deployment
-  #       uses: actions/deploy-pages@v4
+  deploy-docs:
+    needs: [workflow-vars, create-release]
+    if: ${{ needs.workflow-vars.outputs.is_push_to_main == 'true' }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/docs.yml
+    with:
+      ref: ${{ needs.create-release.outputs.tag }}
 
   deploy-pypi-test:
     needs: [build-pypi-dist, workflow-vars]

@@ -24,6 +24,18 @@ def get_graph_data(
     aws_session: Session | None = None,
     aws_profile_name: str | None = None,
 ) -> dict[str, NodeData]:
+    """Collect every CloudFormation export in the account and region, along with the stacks importing it.
+
+    Args:
+        cdk_out_path: Optional path to a synthesized ``cdk.out/`` directory. Imports found in the assembly
+            are added to the deployed imports, so cycles introduced by an undeployed change are detected.
+        aws_session: Optional botocore session used to create the CloudFormation client.
+        aws_profile_name: Optional AWS profile name, used if ``aws_session`` is not provided.
+
+    Returns:
+        A mapping of export name to its :class:`~cycl.models.NodeData`.
+
+    """
     cdk_out_imports: dict[str, list[NodeData]] = (
         get_exports_from_assembly(Path(cdk_out_path)) if cdk_out_path is not None else {}
     )
@@ -79,6 +91,22 @@ def build_graph(  # noqa: PLR0913
     *,
     remove_selfloops: bool = False,
 ) -> nx.MultiDiGraph:
+    """Build a directed graph of stack dependencies, where an edge points from exporting to importing node.
+
+    Args:
+        graph_data: Result of :func:`get_graph_data`. If omitted, it is fetched using the remaining arguments.
+        cdk_out_path: Optional path to a synthesized ``cdk.out/`` directory, see :func:`get_graph_data`.
+        node_key_fn: Function returning the node identifier for a given export. Defaults to the stack name.
+        nodes_to_ignore: Node keys to leave out of the graph.
+        edges_to_ignore: Edges, as ``[exporter, importer]`` pairs, to leave out of the graph.
+        aws_session: Optional botocore session, see :func:`get_graph_data`.
+        aws_profile_name: Optional AWS profile name, see :func:`get_graph_data`.
+        remove_selfloops: Remove edges where a node depends on itself.
+
+    Returns:
+        A :class:`networkx.MultiDiGraph` whose nodes carry a ``node_data`` set.
+
+    """
     nodes_to_ignore = nodes_to_ignore or []
     edges_to_ignore = edges_to_ignore or []
     graph_data = (
