@@ -1,0 +1,61 @@
+name: docs
+
+# Publishes the documentation to GitHub Pages. Runs independently of the release so docs-only
+# changes can be published without cutting a release, and is reused by main.yml after a release.
+on:
+  push:
+    branches: ['main']
+    paths: ['docs/**', '.github/workflows/docs.yml']
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        description: 'Git ref (e.g. a release tag) to build the docs from'
+        type: string
+        default: ''
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0  # version is derived from git tags
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.9'  # minimum supported version
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          ./.venv/bin/python -m pip install .[doc]
+
+      - name: Sphinx build
+        run: ./.venv/bin/sphinx-build docs docs/_build --builder html --fresh-env -W --keep-going
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: docs/_build/
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write      # to deploy to Pages
+      id-token: write   # to verify the deployment originates from an appropriate source
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
