@@ -34,7 +34,7 @@ jobs:
 
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
-          python-version: '3.10'
+          python-version-file: .python-version
 
       - name: install uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2
@@ -68,7 +68,9 @@ jobs:
           version: '0.9.20'
 
       - name: run tests
-        run: make test PYTHON_VERSION=${{ matrix.python-version }}
+        run: make test
+        env:
+          UV_PYTHON: ${{ matrix.python-version }}
 
   build-docs:
     needs: workflow-vars
@@ -84,7 +86,7 @@ jobs:
           version: '0.9.20'
 
       - name: Install dependencies
-        run: uv sync --group doc --locked --python 3.10  # minimum supported version
+        run: uv sync --group doc --locked
 
       - name: Sphinx build
         run: uv run sphinx-build docs docs/_build --builder html --fresh-env -W --keep-going
@@ -201,7 +203,7 @@ jobs:
 
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
-          python-version: "3.10"
+          python-version-file: .python-version
 
       - name: install uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2
