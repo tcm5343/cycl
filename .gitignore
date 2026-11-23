@@ -189,7 +189,6 @@ requirements.cache
 docs_dist
 
 # pyenv
-.python-version
 venv
 .venv
 

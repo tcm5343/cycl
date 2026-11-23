@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 .SHELLFLAGS = -ec
-.PHONY = clean format test validate doc-serve \
+.PHONY = clean format test test-lower test-upper validate doc-serve \
         install-test-deps install-doc-deps install-validation-deps install-e2e-deps \
         build-e2e-infra destroy-e2e-infra run-e2e
 
@@ -22,16 +22,16 @@ lock: pyproject.toml
 	uv lock
 
 install: | $(VENV)
-	uv sync --all-extras
+	uv sync --all-groups
 
 install-test-deps: pyproject.toml uv.lock  ## install test deps
-	uv sync --extra test
+	uv sync --group test
 
 install-doc-deps: pyproject.toml uv.lock ## install doc deps
-	uv sync --extra doc
+	uv sync --group doc
 
 install-validation-deps: pyproject.toml uv.lock ## install validation deps
-	uv sync --extra validation
+	uv sync --group validation
 
 # install-e2e-deps: pyproject.toml uv.lock ## install e2e deps
 # 	uv pip install --requirement ./e2e/requirements-dev.txt
@@ -45,8 +45,15 @@ validate: install-validation-deps ## validate the projects format, lint, and typ
 	uv run ruff check
 	uv run mypy ./src/
 
-test: install-test-deps ## run unit tests
-	PYTHONPATH=./src uv run --isolated --with-editable '.[test]' pytest -n 0 tests/ --cov=./src/
+PYTEST_CMD = pytest -n 0 tests/ --cov=./src/
+
+test-lower: ## run unit tests against the lowest allowed direct dependency versions
+	PYTHONPATH=./src uv run --isolated --resolution lowest-direct --group test --with-editable . $(PYTEST_CMD)
+
+test-upper: ## run unit tests against the latest allowed dependency versions
+	PYTHONPATH=./src uv run --isolated --upgrade --group test --with-editable . $(PYTEST_CMD)
+
+test: test-lower test-upper ## run unit tests against the lowest and latest allowed dependency versions
 
 # doc-serve: install-doc-deps ## serve the documentation locally
 # 	uv run --python $(VENV)/bin/python sphinx-autobuild -M html docs docs/_build

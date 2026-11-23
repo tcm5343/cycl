@@ -29,17 +29,16 @@ jobs:
           ref: ${{ inputs.ref }}
           fetch-depth: 0  # version is derived from git tags
 
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+      - name: install uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2
         with:
-          python-version: '3.10'  # minimum supported version
+          version: '0.9.20'
 
       - name: Install dependencies
-        run: |
-          python -m venv .venv
-          ./.venv/bin/python -m pip install .[doc]
+        run: uv sync --group doc --locked --python 3.10  # minimum supported version
 
       - name: Sphinx build
-        run: ./.venv/bin/sphinx-build docs docs/_build --builder html --fresh-env -W --keep-going
+        run: uv run sphinx-build docs docs/_build --builder html --fresh-env -W --keep-going
 
       - uses: actions/upload-pages-artifact@v4
         with:
