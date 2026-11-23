@@ -54,7 +54,3 @@ destroy-e2e-infra: install ## tear down the e2e testing infra in AWS
 run-e2e: ## run e2e tests in AWS, using
 	uv pip install --requirement ./e2e/requirements-dev.txt
 	uv run --no-project pytest ./e2e/tests/
-
-github-mcp: ## run the github mcp server over stdio, authenticated with the PAT in GH_TOKEN
-	@token="$${GH_TOKEN:-$$(gh auth token)}"; \
-		docker run -i --rm -e GITHUB_PERSONAL_ACCESS_TOKEN="$$token" ghcr.io/github/github-mcp-server
