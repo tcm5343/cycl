@@ -50,7 +50,7 @@ validation = [
     'ruff>=0.14',
     'types-networkx>=3.4',
 ]
-doc = [
+docs = [
     'myst-parser>=3.0,<4',
     'sphinx>=7.4,<8',
     'sphinx-argparse>=0.4',
@@ -71,7 +71,7 @@ e2e-infra = [  # deploying e2e/infra (make build-e2e-infra / destroy-e2e-infra)
 dev = [
     {include-group = 'test'},
     {include-group = 'validation'},
-    {include-group = 'doc'},
+    {include-group = 'docs'},
     {include-group = 'dist'},
     {include-group = 'e2e'},
     {include-group = 'e2e-infra'},
@@ -158,3 +158,6 @@ addopts = ['--import-mode=importlib']
 [tool.uv]
 required-version = '==0.13.9'  # also used by astral-sh/setup-uv in CI
 default-groups = []
+# the version comes from git tags (setuptools-git-versioning), so a new commit or tag has to rebuild cycl, rather than
+# reusing a cached build that has the old version
+cache-keys = [{ file = 'pyproject.toml' }, { git = { commit = true, tags = true } }]

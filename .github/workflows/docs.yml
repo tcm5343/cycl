@@ -13,10 +13,10 @@ on:
         description: 'Git ref (e.g. a release tag) to build the docs from'
         type: string
         default: ''
-
-concurrency:
-  group: pages
-  cancel-in-progress: false
+      build-only:
+        description: 'Only check that the docs build (main.yml runs this on every pull request), without deploying'
+        type: boolean
+        default: false  # also what `inputs.build-only` reads as on push and workflow_dispatch, where it is unset
 
 jobs:
   build:
@@ -28,24 +28,28 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
           fetch-depth: 0  # version is derived from git tags
+          persist-credentials: false
 
       - name: install uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
         with:
           version-file: pyproject.toml
 
-      - name: Install dependencies
-        run: uv sync --group doc --locked
+      - name: Build docs
+        run: make build-docs
 
-      - name: Sphinx build
-        run: uv run sphinx-build docs docs/_build --builder html --fresh-env -W --keep-going
-
-      - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b  # v4.0.0
+      - if: ${{ !inputs.build-only }}
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b  # v4.0.0
         with:
           path: docs/_build/
 
   deploy:
     needs: build
+    if: ${{ !inputs.build-only }}
+    # job-level rather than workflow-level, so build-only runs from pull requests never join (or displace) the queue
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     environment:
       name: github-pages

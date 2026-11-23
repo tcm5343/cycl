@@ -1,4 +1,4 @@
-# Docs are built with the package and its dependencies installed (`pip install . --group doc`),
+# Docs are built with the package and its dependencies installed (`pip install . --group docs`),
 # so modules like boto3/networkx are imported for real (required by sphinx-argparse).
 
 from datetime import datetime, timezone
