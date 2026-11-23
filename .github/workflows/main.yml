@@ -93,10 +93,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ steps.tag.outputs.new_tag }}
+          # workflow_dispatch builds (make deploy) are betas, which must not become the "Latest" release
+          prerelease: ${{ github.event_name != 'push' }}
         run: |
           gh release create "${tag}" \
               --repo="$GITHUB_REPOSITORY" \
               --title="${tag#v}" \
+              --prerelease="${prerelease}" \
               --generate-notes
 
   build-dist:

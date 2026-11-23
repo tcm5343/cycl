@@ -35,11 +35,8 @@ jobs:
         with:
           version-file: pyproject.toml
 
-      - name: Install dependencies
-        run: uv sync --group doc --locked
-
-      - name: Sphinx build
-        run: uv run sphinx-build docs docs/_build --builder html --fresh-env -W --keep-going
+      - name: Build docs
+        run: make build-docs
 
       - if: ${{ !inputs.build-only }}
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b  # v4.0.0

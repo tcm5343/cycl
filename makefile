@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 .SHELLFLAGS = -ec
-.PHONY: help clean lock install format test test-lower test-upper validate doc-serve build-e2e-infra destroy-e2e-infra run-e2e deploy
+.PHONY: help clean lock install format test test-lower test-upper validate build-docs serve-docs build-e2e-infra destroy-e2e-infra run-e2e deploy
 
 export CDK_DISABLE_CLI_TELEMETRY = true
 export UV_NO_PROGRESS = true
@@ -38,8 +38,15 @@ test-upper: ## run unit tests against the latest allowed dependency versions
 
 test: test-lower test-upper ## run unit tests against the lowest and latest allowed dependency versions
 
-doc-serve: install ## serve the documentation locally
-	uv run sphinx-autobuild docs docs/_build
+# shared by build-docs and serve-docs, so the live docs fail on the same warnings CI does. --fresh-env re-reads every
+# page on each build, so warnings in files you didn't just edit still show (a full build only takes a few seconds)
+SPHINX_ARGS = docs docs/_build --builder html --fresh-env -W --keep-going
+
+build-docs: ## build the documentation into docs/_build, failing on any warning (as CI does)
+	uv run --locked --group docs sphinx-build $(SPHINX_ARGS)
+
+serve-docs: ## serve the documentation locally, rebuilding on changes (same build as build-docs)
+	uv run --locked --group docs sphinx-autobuild $(SPHINX_ARGS)
 
 build-e2e-infra: install ## build the e2e testing infra in AWS
 	./do/build-e2e-infra.sh

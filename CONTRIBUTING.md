@@ -38,10 +38,12 @@ make test         # runs both the lowest and latest allowed versions of direct d
 ### Documentation
 
 ```bash
-make doc-serve   # live-reloading docs at http://127.0.0.1:8000
+make serve-docs    # live-reloading docs at http://127.0.0.1:8000
+make build-docs    # one-off build into docs/_build
 ```
 
-CI builds the docs with warnings treated as errors (`sphinx-build -W`), so check the build output for warnings.
+Both build the docs exactly as CI does, with warnings treated as errors (`sphinx-build -W`): any warning fails
+the build, and `serve-docs` shows it in the terminal.
 Update the docs alongside any user-facing change:
 
 ## End-to-end tests
