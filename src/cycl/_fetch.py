@@ -36,7 +36,8 @@ def fetch_exports(*, cfn_client: CloudFormationClient | None = None, describe_st
             for example ``boto3.Session(profile_name=..., region_name=...).client('cloudformation',
             config=botocore.config.Config(retries={'max_attempts': 10, 'mode': 'adaptive'}))``.
         describe_stacks: Also make a ``DescribeStacks`` call (paginated, about one call per 100 stacks), to fill in
-            the ``id`` and ``tags`` of every stack. Requires the ``cloudformation:DescribeStacks`` permission.
+            the ``id`` and ``tags`` of every stack. Requires the ``cloudformation:DescribeStacks``
+            and ``cloudformation:ListStacks`` permissions.
 
     Returns:
         A mapping of export name to its :class:`~cycl.Export`.

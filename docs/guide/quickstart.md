@@ -26,7 +26,8 @@ The credentials used need the following IAM permissions:
 
 - `cloudformation:ListExports`
 - `cloudformation:ListImports`
-- `cloudformation:DescribeStacks`, only to fetch stack ARNs and tags with the Python SDK (`fetch_exports(describe_stacks=True)`)
+- `cloudformation:DescribeStacks` and `cloudformation:ListStacks`, only to fetch stack ARNs and tags with the Python SDK
+  (`fetch_exports(describe_stacks=True)`). Describing every stack, rather than one by name, requires both.
 
 ## Run
 

@@ -96,7 +96,7 @@ graph.nodes['billing']['exports']  # dict of export name -> Export defined by th
 ### Group stacks by tag
 
 Fetch with `describe_stacks=True` to fill in each {class}`~cycl.Stack`'s `tags` (one extra paginated
-`DescribeStacks` call, and the `cloudformation:DescribeStacks` permission). Nodes can then be any grouping you tag
+`DescribeStacks` call, and the `cloudformation:DescribeStacks` and `cloudformation:ListStacks` permissions). Nodes can then be any grouping you tag
 stacks with, such as the repository that deploys them.
 
 ```python
