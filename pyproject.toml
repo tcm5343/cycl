@@ -62,9 +62,11 @@ dist = [
     'build>=1.3',
     'twine>=6.1',  # not used in pipeline
 ]
-e2e = [
+e2e = [  # running e2e/tests (make run-e2e); cycl itself is added separately
     'pytest>=9.0.3,<10',
-    'aws-cdk-lib==2.278.0',  # keep in sync with e2e/infra
+]
+e2e-infra = [  # deploying e2e/infra (make build-e2e-infra / destroy-e2e-infra)
+    'aws-cdk-lib==2.278.0',
     'constructs>=10.5.0,<11.0.0',
 ]
 dev = [
@@ -73,6 +75,7 @@ dev = [
     {include-group = 'doc'},
     {include-group = 'dist'},
     {include-group = 'e2e'},
+    {include-group = 'e2e-infra'},
 ]
 
 [project.urls]

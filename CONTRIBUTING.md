@@ -47,16 +47,21 @@ Update the docs alongside any user-facing change:
 ## End-to-end tests
 
 The e2e tests run `cycl` against real stacks in AWS: an acyclic set in `us-east-1` and a cyclic set in `us-west-2`.
-They need AWS credentials and an account bootstrapped for CDK, so they are optional for contributors; CI runs them
-against every release before it is published to PyPI.
+They need AWS credentials and an account bootstrapped for CDK, so they are optional for contributors. CI runs them
+against a wheel built from each pull request opened from a branch of this repository (not forks), and against every
+release before it is published to PyPI. Both need a maintainer to approve the `aws` environment.
 
 To run them in your own account:
 
 ```bash
 make build-e2e-infra     # deploy the stacks (requires the AWS CDK CLI: npm install -g aws-cdk)
-make run-e2e             # run e2e/tests/ against them
+make run-e2e             # run e2e/tests/ against them, using cycl built from this source tree
 make destroy-e2e-infra   # tear them down
 ```
+
+`make run-e2e` runs in a throwaway environment, so it doesn't touch `.venv`. To test something other than the source
+tree, pass it as `CYCL_SPEC`, e.g. a built wheel (`CYCL_SPEC=dist/cycl-1.2.3-py3-none-any.whl`) or a release from PyPI
+(`CYCL_SPEC=cycl==1.2.3`).
 
 Creating the cycle requires deploying the stacks twice, which `build-e2e-infra` does for you.
 
@@ -65,7 +70,7 @@ Creating the cycle requires deploying the stacks twice, which `build-e2e-infra` 
 Releases are automated. Every merge to `main` that passes CI:
 
 1. bumps the version and tags it (`vX.Y.Z`), creating a GitHub release with generated notes,
-2. publishes the package to Test PyPI and runs the e2e tests against it,
+2. runs the e2e tests against the built wheel and publishes it to Test PyPI,
 3. publishes it to PyPI and redeploys the docs.
 
 The version bump is a patch by default. Include `#minor` or `#major` in the commit message merged to `main` (the pull

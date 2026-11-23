@@ -1,6 +1,8 @@
 import json
 import logging
+import subprocess
 import sys
+from pathlib import Path
 from unittest.mock import patch
 
 import networkx as nx
@@ -175,3 +177,18 @@ def test_app_unexpected_error_is_not_caught(mock_fetch_exports):
     sys.argv = ['cycl', 'check']
     with pytest.raises(RuntimeError, match='boom'):
         app()
+
+
+@pytest.mark.parametrize(
+    'command',
+    [
+        pytest.param([Path(sys.executable).parent / 'cycl'], id='console-script'),  # from [project.scripts]
+        pytest.param([sys.executable, '-m', 'cycl'], id='python-m'),  # cycl/__main__.py
+    ],
+)
+def test_entry_points_run_app(command):
+    # run as real processes, as users do; with no arguments the CLI prints help without calling AWS
+    result = subprocess.run(command, capture_output=True, text=True, check=False)  # noqa: S603
+
+    assert result.returncode == 0, result.stderr
+    assert 'usage: cycl [-h] {check,topo}' in result.stdout

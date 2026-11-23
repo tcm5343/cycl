@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  workflow-vars:
+  workflow-setup:
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -25,28 +25,8 @@ jobs:
           fi
           echo "is_push_to_main=${is_push_to_main}" >> $GITHUB_OUTPUT
 
-  code-quality:
-    needs: workflow-vars
-    permissions:
-      contents: read
-    runs-on: 'ubuntu-latest'
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
-
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
-        with:
-          python-version-file: .python-version
-
-      - name: install uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
-        with:
-          version-file: pyproject.toml
-
-      - name: validate
-        run: make validate
-
   unit-tests:
-    needs: workflow-vars
+    needs: workflow-setup
     permissions:
       contents: read
     strategy:
@@ -54,6 +34,11 @@ jobs:
       matrix:
         os: ['ubuntu-latest']
         python-version: ['3.10', '3.11', '3.12', '3.13', '3.14', '3.15']
+        target: ['test']  # makefile target(s) to run
+        include:
+          - os: ubuntu-latest
+            python-version: '3.10'
+            target: validate
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
@@ -68,13 +53,14 @@ jobs:
         with:
           version-file: pyproject.toml
 
-      - name: run tests
-        run: make test
+      - name: make ${{ matrix.target }}
+        run: make "${TARGET}"
         env:
+          TARGET: ${{ matrix.target }}
           UV_PYTHON: ${{ matrix.python-version }}
 
   build-docs:
-    needs: workflow-vars
+    needs: workflow-setup
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -92,9 +78,48 @@ jobs:
       - name: Sphinx build
         run: uv run sphinx-build docs docs/_build --builder html --fresh-env -W --keep-going
 
+  build-pr-dist:
+    needs: workflow-setup
+    # e2e assumes an AWS role via OIDC, which fork and Dependabot pull requests can't do
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
+        with:
+          fetch-depth: 0  # version is derived from git tags
+
+      - name: install uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+        with:
+          version-file: pyproject.toml
+
+      - name: Build distribution
+        run: uv build
+
+      - name: Upload distribution artifacts
+        id: upload
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: pr-dist
+          path: dist/
+          retention-days: 1
+
+  e2e-pr:
+    needs: build-pr-dist
+    permissions:
+      id-token: write  # configure-aws-credentials
+      contents: read   # checkout
+    uses: ./.github/workflows/e2e.yml
+    with:
+      artifact-id: ${{ needs.build-pr-dist.outputs.artifact-id }}
+
   create-release:
-    needs: [workflow-vars, build-docs, unit-tests, code-quality]
-    if: ${{ needs.workflow-vars.outputs.is_push_to_main == 'true'|| github.event_name == 'workflow_dispatch' }}
+    needs: [workflow-setup, build-docs, unit-tests]
+    if: ${{ needs.workflow-setup.outputs.is_push_to_main == 'true'|| github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.tag.outputs.new_tag }}
@@ -113,7 +138,7 @@ jobs:
           GIT_API_TAGGING: false
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PRERELEASE_SUFFIX: b
-          PRERELEASE: ${{ needs.workflow-vars.outputs.is_push_to_main == 'false' }}
+          PRERELEASE: ${{ needs.workflow-setup.outputs.is_push_to_main == 'false' }}
           WITH_V: true
 
       - name: Create release from tag
@@ -131,6 +156,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
         with:
@@ -148,6 +175,7 @@ jobs:
         run: uv build
 
       - name: Upload distribution artifacts
+        id: upload
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: pypi-artifact
@@ -155,8 +183,8 @@ jobs:
           retention-days: 7
 
   deploy-docs:
-    needs: [workflow-vars, create-release]
-    if: ${{ needs.workflow-vars.outputs.is_push_to_main == 'true' }}
+    needs: [workflow-setup, create-release]
+    if: ${{ needs.workflow-setup.outputs.is_push_to_main == 'true' }}
     permissions:
       contents: read
       pages: write
@@ -166,8 +194,8 @@ jobs:
       ref: ${{ needs.create-release.outputs.tag }}
 
   deploy-pypi-test:
-    needs: [build-pypi-dist, workflow-vars]
-    if: ${{ needs.workflow-vars.outputs.is_push_to_main == 'true' || github.event_name == 'workflow_dispatch' }}
+    needs: [build-pypi-dist, workflow-setup]
+    if: ${{ needs.workflow-setup.outputs.is_push_to_main == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     environment:
       name: test
@@ -195,71 +223,20 @@ jobs:
       - name: publish
         run: uv publish --publish-url ${{ vars.PYPI_REPOSITORY_URL }}
 
-  e2e-pypi-test:
-    needs: [create-release, deploy-pypi-test]
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    environment:
-      name: aws
+  e2e-release:
+    # tests the exact wheel published to Test PyPI and PyPI; installing it directly (rather than from Test PyPI)
+    # keeps cycl's dependencies coming only from PyPI
+    needs: [build-pypi-dist]
     permissions:
-      id-token: write # This is required for requesting the JWT
-      contents: read  # This is required for actions/checkout
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
-
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
-        with:
-          python-version-file: .python-version
-
-      - name: install uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
-        with:
-          version-file: pyproject.toml
-
-      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd  # v6.3.0
-        with:
-          aws-region: us-east-1
-          role-to-assume: arn:aws:iam::929185124050:role/e2e-testing-role
-          role-session-name: e2e-testing-role
-
-      - name: install cycl from pypi test
-        shell: bash
-        env:
-          TEST_VERSION: ${{ needs.create-release.outputs.tag }}
-        run: |
-          uv venv  # .venv for the Test PyPI install below and `make run-e2e`
-
-          PACKAGE="cycl==${TEST_VERSION#v}"
-          INDEX_URL="https://test.pypi.org/simple/"
-          EXTRA_INDEX_URL="https://pypi.org/simple"
-          MAX_ATTEMPTS=12
-          SLEEP=15
-
-          for i in $(seq 1 $MAX_ATTEMPTS); do
-            if uv pip install \
-                --index-url "$INDEX_URL" \
-                --extra-index-url "$EXTRA_INDEX_URL" \
-                --index-strategy unsafe-best-match \
-                --no-cache-dir \
-                "$PACKAGE"; then
-              echo "Package installed successfully!"
-              break
-            fi
-            echo "Attempt $i/$MAX_ATTEMPTS failed. Retrying in $SLEEP seconds..."
-            sleep $SLEEP
-          done
-
-          if ! uv pip show cycl >/dev/null 2>&1; then
-            echo "Failed to install $PACKAGE from Test PyPI after $((MAX_ATTEMPTS * SLEEP)) seconds."
-            exit 1
-          fi
-
-      - name: run e2e
-        run: make run-e2e
+      id-token: write  # configure-aws-credentials
+      contents: read   # checkout
+    uses: ./.github/workflows/e2e.yml
+    with:
+      artifact-id: ${{ needs.build-pypi-dist.outputs.artifact-id }}
 
   deploy-pypi-prod:
-    needs: [e2e-pypi-test, workflow-vars]
-    if: ${{ needs.workflow-vars.outputs.is_push_to_main == 'true' }}
+    needs: [e2e-release, deploy-pypi-test, workflow-setup]
+    if: ${{ needs.workflow-setup.outputs.is_push_to_main == 'true' }}
     runs-on: ubuntu-latest
     environment:
       name: prod
