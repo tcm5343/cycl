@@ -35,7 +35,7 @@ jobs:
           version: '0.9.20'
 
       - name: Install dependencies
-        run: uv sync --group doc --locked --python 3.10  # minimum supported version
+        run: uv sync --group doc --locked
 
       - name: Sphinx build
         run: uv run sphinx-build docs docs/_build --builder html --fresh-env -W --keep-going
