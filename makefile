@@ -47,9 +47,10 @@ build-e2e-infra: install ## build the e2e testing infra in AWS
 destroy-e2e-infra: install ## tear down the e2e testing infra in AWS
 	./do/destroy-e2e-infra.sh
 
-run-e2e: ## run the e2e tests against the infra deployed by build-e2e-infra (needs AWS credentials)
-	uv pip install --requirement ./e2e/requirements-dev.txt
-	uv run --no-project pytest ./e2e/tests/
+# the cycl under test: this source tree by default, or e.g. CYCL_SPEC=dist/cycl-1.2.3-py3-none-any.whl / cycl==1.2.3
+CYCL_SPEC ?= .
+run-e2e: ## run the e2e tests against the infra deployed by build-e2e-infra (needs AWS credentials, see CYCL_SPEC)
+	uv run --isolated --locked --only-group e2e --with "$(CYCL_SPEC)" pytest ./e2e/tests/
 
 deploy: ## run main.yml for the current branch, publishing a prerelease to Test PyPI and running e2e
 	gh workflow run main.yml --ref $(BRANCH_NAME)
