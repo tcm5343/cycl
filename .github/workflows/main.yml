@@ -26,6 +26,7 @@ jobs:
           echo "is_push_to_main=${is_push_to_main}" >> $GITHUB_OUTPUT
 
   unit-tests:
+    name: ${{ matrix.target }}_${{ matrix.python-version }}_${{ matrix.os }}
     needs: workflow-setup
     permissions:
       contents: read
