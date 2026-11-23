@@ -13,6 +13,11 @@ ACYCLIC_REGION = 'us-east-1'  # acyclic-stack has an export nothing imports
 STACK_A = 'cyclic-stack-a'
 STACK_B = 'cyclic-stack-b'
 ACYCLIC_STACK = 'acyclic-stack'
+# stacks AWS creates in the account rather than e2e/infra, which can have exports of their own
+AWS_MANAGED_STACKS = [
+    'CDKToolkit',  # created by `cdk bootstrap`
+]
+IGNORE_AWS_MANAGED_STACKS = [arg for stack in AWS_MANAGED_STACKS for arg in ('--ignore-node', stack)]
 EXIT_OK = 0
 EXIT_CYCLE_FOUND = 3
 
@@ -100,7 +105,7 @@ def test_ignore_node_breaks_cycle(node):
     ],
 )
 def test_ignore_edge_breaks_cycle(edge, expected_generations):
-    result = run_cycl('topo', '--format', 'json', '--ignore-edge', *edge, region=CYCLIC_REGION)
+    result = run_cycl('topo', '--format', 'json', '--ignore-edge', *edge, *IGNORE_AWS_MANAGED_STACKS, region=CYCLIC_REGION)
 
     assert result.returncode == EXIT_OK, describe(result)
     assert json.loads(result.stdout) == {'cycles': [], 'generations': expected_generations}, describe(result)
@@ -110,24 +115,28 @@ def _cyclic_region_client():
     return boto3.client('cloudformation', region_name='us-west-2')
 
 
-def test_fetch_exports_describe_stacks():
+def test_fetch_exports_describe_stacks(subtests):
     exports = fetch_exports(cfn_client=_cyclic_region_client(), describe_stacks=True)
 
     export = exports['cyclic-stack-a-export-1']
     stacks = [export.exporting_stack, *export.importing_stacks]
-    assert [stack.name for stack in stacks] == ['cyclic-stack-a', 'cyclic-stack-b']
+    assert [stack.name for stack in stacks] == [STACK_A, STACK_B]
     for stack in stacks:
-        assert stack.id is not None, stack
-        assert stack.id.startswith('arn:aws:cloudformation:us-west-2:'), stack
-        assert stack.tags.get('cycl-e2e-group') == 'cyclic', stack
+        with subtests.test(stack=stack.name):
+            assert stack.id is not None, stack
+            assert stack.id.startswith('arn:aws:cloudformation:us-west-2:'), stack
+            assert stack.tags.get('cycl-e2e-group') == 'cyclic', stack
 
     graph = build_graph(exports, node_key_fn=lambda stack: stack.tags.get('cycl-e2e-group', stack.name))
     assert set(graph.nodes['cyclic']['stacks']) >= set(stacks)
 
 
-def test_fetch_exports_excludes_tags_by_default():
+def test_fetch_exports_excludes_tags_by_default(subtests):
     exports = fetch_exports(cfn_client=_cyclic_region_client())
 
     export = exports['cyclic-stack-a-export-1']
-    assert export.exporting_stack.tags == {}
-    assert all(stack.tags == {} for stack in export.importing_stacks)
+    stacks = [export.exporting_stack, *export.importing_stacks]
+    assert [stack.name for stack in stacks] == [STACK_A, STACK_B]
+    for stack in stacks:
+        with subtests.test(stack=stack.name):
+            assert stack.tags == {}, stack

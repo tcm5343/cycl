@@ -43,7 +43,6 @@ test = [
     'pytest>=9.0.3,<10',
     'pytest-cov>=7.0',
     'pytest-sugar>=1.1',
-    'pytest-subtests>=0.15',
 ]
 validation = [
     'boto3-stubs[essential]>=1.40',
