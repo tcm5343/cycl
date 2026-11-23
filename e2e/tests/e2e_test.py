@@ -6,7 +6,7 @@ import sys
 
 def test_cyclic_region(monkeypatch):
     region = 'us-west-2'
-    expected_return_code = 2  # cycle found
+    expected_return_code = 3  # cycle found
     expected_nodes_in_cycle = ['cyclic-stack-b', 'cyclic-stack-a']
 
     monkeypatch.setenv('AWS_DEFAULT_REGION', region)

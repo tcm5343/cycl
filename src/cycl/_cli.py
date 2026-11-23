@@ -2,9 +2,9 @@
 
 Exit codes:
     0: No cycles found (or ``--exit-zero`` was passed to ``check``).
-    1: An error occurred, e.g. invalid usage or an AWS error. Any unexpected exception also exits 1, so 1 is
-       never mistaken for a result.
-    2: A cycle was found.
+    1: An error occurred while running, e.g. an AWS error. Any unexpected exception also exits 1.
+    2: Invalid usage, e.g. an unknown argument (argparse's default).
+    3: A cycle was found. Nothing else exits 3, so it is never mistaken for a failure to run.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ import json
 import logging
 import sys
 from logging import getLogger
-from typing import TYPE_CHECKING, NoReturn
+from typing import TYPE_CHECKING
 
 import networkx as nx
 
@@ -27,23 +27,11 @@ if TYPE_CHECKING:
 log = getLogger(__name__)
 
 EXIT_OK = 0
-EXIT_ERROR = 1
-EXIT_CYCLE_FOUND = 2
-
-
-class _ArgumentParser(argparse.ArgumentParser):
-    """Exit 1 on usage errors (argparse defaults to 2), so 2 only ever means a cycle was found.
-
-    Sub-parsers inherit this class, since ``add_subparsers`` defaults to the parent parser's class.
-    """
-
-    def error(self, message: str) -> NoReturn:
-        self.print_usage(sys.stderr)
-        self.exit(EXIT_ERROR, f'{self.prog}: error: {message}\n')
+EXIT_CYCLE_FOUND = 3  # 1 is any runtime error (Python's default) and 2 is a usage error (argparse's default)
 
 
 def create_parser() -> argparse.ArgumentParser:
-    parser = _ArgumentParser(prog='cycl', description='Check circular dependencies between imports and exports.')
+    parser = argparse.ArgumentParser(prog='cycl', description='Check circular dependencies between imports and exports.')
     sp = parser.add_subparsers(dest='cmd', required=True)
 
     check_p = sp.add_parser('check', help='Check for cycles between AWS stack imports and exports.')

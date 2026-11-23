@@ -54,7 +54,7 @@ def test_app_no_cmd_displays_help(capsys):
 
 
 def test_app_unsupported_action(capsys):
-    assert _run('something') == 1
+    assert _run('something') == 2
     assert "cycl: error: argument cmd: invalid choice: 'something'" in capsys.readouterr().err
 
 
@@ -66,7 +66,7 @@ def test_app_check_acyclic(capsys):
 def test_app_check_cyclic(capsys, mock_build_graph):
     mock_build_graph.return_value = _graph(CYCLIC_EDGES)
 
-    assert _run('check') == 2
+    assert _run('check') == 3
     assert 'cycle found between nodes: [1, 2]' in capsys.readouterr().out
 
 
@@ -80,7 +80,7 @@ def test_app_check_cyclic_exit_zero(capsys, mock_build_graph):
 def test_app_check_json(capsys, mock_build_graph):
     mock_build_graph.return_value = _graph(CYCLIC_EDGES)
 
-    assert _run('check', '--format', 'json') == 2
+    assert _run('check', '--format', 'json') == 3
     assert json.loads(capsys.readouterr().out) == {'cycles': [[1, 2]]}
 
 
@@ -109,7 +109,7 @@ def test_app_topo_cyclic(caplog, capsys, mock_build_graph):
     caplog.set_level(logging.DEBUG)
     mock_build_graph.return_value = _graph(CYCLIC_EDGES)
 
-    assert _run('topo') == 2
+    assert _run('topo') == 3
     assert 'graph is cyclic, topological generations can only be computed on an acyclic graph' in caplog.text
     assert 'cycle found between nodes: [1, 2]' in capsys.readouterr().out
 
@@ -136,7 +136,7 @@ def test_app_topo_json(capsys, mock_build_graph):
 def test_app_topo_json_cyclic(capsys, mock_build_graph):
     mock_build_graph.return_value = _graph(CYCLIC_EDGES)
 
-    assert _run('topo', '--format', 'json') == 2
+    assert _run('topo', '--format', 'json') == 3
     assert json.loads(capsys.readouterr().out) == {'cycles': [[1, 2]], 'generations': None}
 
 
@@ -163,13 +163,13 @@ def test_app_defaults(mock_fetch_exports, mock_build_graph, cmd):
 
 
 @pytest.mark.parametrize('argv', [['check', '--unknown-flag'], ['topo', '--format', 'xml'], ['check', '--ignore-edge', 'u']])
-def test_app_subcommand_usage_error_exits_one(capsys, argv):
-    assert _run(*argv) == 1
+def test_app_subcommand_usage_error_exits_two(capsys, argv):
+    assert _run(*argv) == 2
     assert 'error:' in capsys.readouterr().err
 
 
 def test_app_unexpected_error_is_not_caught(mock_fetch_exports):
-    """Unexpected errors propagate, so Python exits 1 with a traceback rather than reporting a result."""
+    """Unexpected errors propagate, so Python exits 1 with a traceback, never the cycle exit code."""
     mock_fetch_exports.side_effect = RuntimeError('boom')
 
     sys.argv = ['cycl', 'check']
