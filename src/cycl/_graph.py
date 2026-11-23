@@ -1,55 +1,18 @@
 from __future__ import annotations
 
-import dataclasses
 from logging import getLogger
 from operator import attrgetter
 from typing import TYPE_CHECKING
 
-import boto3
 import networkx as nx
-from botocore.config import Config
-
-from cycl._utils.cfn import list_exports, list_importing_stacks
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Hashable, Mapping
-
-    from mypy_boto3_cloudformation import CloudFormationClient
 
     from cycl.models import Export, Stack
 
 
 log = getLogger(__name__)
-
-_DEFAULT_CLIENT_CONFIG = Config(retries={'max_attempts': 10, 'mode': 'adaptive'})
-
-
-def fetch_exports(*, cfn_client: CloudFormationClient | None = None) -> dict[str, Export]:
-    """Collect every CloudFormation export in the account and region, along with the stacks importing it.
-
-    This makes one ``ListImports`` call per export, so it can take a while on accounts with many exports. Fetch
-    once and pass the result to :func:`build_graph` as many times as needed.
-
-    Args:
-        cfn_client: CloudFormation client used to list exports and imports. If omitted, one is created with
-            ``boto3`` (standard credential chain) and adaptive retries. To use a specific profile or region,
-            pass ``boto3.Session(profile_name=..., region_name=...).client('cloudformation')``.
-
-    Returns:
-        A mapping of export name to its :class:`~cycl.Export`.
-    """
-    cfn_client = cfn_client or boto3.client('cloudformation', config=_DEFAULT_CLIENT_CONFIG)
-
-    log.info('getting all exports')
-    exports = list_exports(cfn_client)
-
-    log.info('getting imports for %s exports', len(exports))
-    for name, export in exports.items():
-        importing_stacks = list_importing_stacks(cfn_client, name)
-        if not importing_stacks:
-            log.warning('Export found with no import: %s from %s', name, export.exporting_stack.name)
-        exports[name] = dataclasses.replace(export, importing_stacks=tuple(dict.fromkeys(importing_stacks)))
-    return exports
 
 
 def _add_stack(graph: nx.MultiDiGraph, key: Hashable, stack: Stack) -> None:
@@ -82,6 +45,10 @@ def build_graph(
             example, to group stacks by the prefix before the first ``-``::
 
                 build_graph(exports, node_key_fn=lambda stack: stack.name.split('-')[0])
+
+            or to group stacks by a tag::
+
+                build_graph(exports, node_key_fn=lambda stack: stack.tags.get('github-repo', stack.name))
 
         ignore_nodes: Node keys to leave out of the graph.
         ignore_edges: Edges, as ``(exporter, importer)`` node key pairs, to leave out of the graph.
@@ -119,3 +86,37 @@ def build_graph(
         dep_graph.remove_edges_from(list(nx.selfloop_edges(dep_graph, keys=True)))  # type: ignore[arg-type]
 
     return dep_graph
+
+
+def merge_graphs(graphs: Mapping[Hashable, nx.MultiDiGraph]) -> nx.MultiDiGraph:
+    """Merge graphs built from different accounts or regions into one graph.
+
+    Nodes with the same key in several graphs become one node, so the node keys decide what is merged. With the
+    default ``node_key_fn`` (stack name), unrelated stacks that share a name across accounts would be merged, so
+    build each graph with a ``node_key_fn`` that is meaningful across accounts, such as a tag, or that includes
+    the source.
+
+    Export names are only unique within an account and region, so in the merged graph edges are keyed by
+    ``(source, export name)``, as are the entries of each node's ``exports``. A node's ``stacks`` is the union
+    of its stacks in every graph. Fetch with ``describe_stacks=True`` to tell those stacks apart: otherwise stacks
+    which only import have no ``id``, so same named ones from different sources are equal and kept once.
+
+    Args:
+        graphs: Graphs from :func:`build_graph`, keyed by a hashable label for their source, such as the
+            account ID or an ``(account, region)`` pair.
+
+    Returns:
+        A :class:`networkx.MultiDiGraph` with the same node and edge attributes as :func:`build_graph`.
+    """
+    merged: nx.MultiDiGraph = nx.MultiDiGraph()
+    for source, graph in graphs.items():
+        for node, data in graph.nodes(data=True):
+            if node not in merged:
+                merged.add_node(node, stacks=set(), exports={})
+            merged.nodes[node]['stacks'].update(data['stacks'])
+            merged.nodes[node]['exports'].update(
+                {(source, export_name): export for export_name, export in data['exports'].items()}
+            )
+        for u, v, key, data in graph.edges(keys=True, data=True):
+            merged.add_edge(u, v, key=(source, key), **data)
+    return merged

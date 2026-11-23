@@ -1,8 +1,6 @@
 SHELL := /bin/bash
 .SHELLFLAGS = -ec
-.PHONY = clean format test test-lower test-upper validate doc-serve \
-        install \
-        build-e2e-infra destroy-e2e-infra run-e2e
+.PHONY: clean format test test-lower test-upper validate doc-serve install build-e2e-infra destroy-e2e-infra run-e2e
 
 export CDK_DISABLE_CLI_TELEMETRY = true
 export UV_NO_PROGRESS = true
@@ -44,8 +42,8 @@ test-upper: ## run unit tests against the latest allowed dependency versions
 
 test: test-lower test-upper ## run unit tests against the lowest and latest allowed dependency versions
 
-# doc-serve: install ## serve the documentation locally
-# 	uv run --python $(VENV)/bin/python sphinx-autobuild -M html docs docs/_build
+doc-serve: install ## serve the documentation locally
+	uv run sphinx-autobuild docs docs/_build
 
 build-e2e-infra: install ## build the e2e testing infra in AWS
 	./do/build-e2e-infra.sh

@@ -3,7 +3,7 @@ from unittest.mock import Mock
 import pytest
 from botocore.exceptions import ClientError
 
-from cycl._utils.cfn import list_exports, list_importing_stacks, parse_name_from_id
+from cycl._utils.cfn import describe_all_stacks, list_exports, list_importing_stacks, parse_name_from_id
 from cycl.models import Export, Stack
 
 
@@ -47,14 +47,29 @@ def test_list_exports_across_pages():
     actual = list_exports(cfn_client)
 
     assert actual == {
-        'export-1': Export(name='export-1', value='value-1', exporting_stack=Stack(name='stack-1')),
-        'export-2': Export(name='export-2', value='value-2', exporting_stack=Stack(name='stack-2')),
+        'export-1': Export(name='export-1', value='value-1', exporting_stack=Stack(name='stack-1', id=stack_id_1)),
+        'export-2': Export(name='export-2', value='value-2', exporting_stack=Stack(name='stack-2', id=stack_id_2)),
     }
-    assert actual['export-1'].exporting_stack.id == stack_id_1
 
 
 def test_list_exports_empty():
     assert list_exports(_client_with_pages('list_exports', [{'Exports': []}])) == {}
+
+
+def test_describe_all_stacks_across_pages():
+    cfn_client = _client_with_pages(
+        'describe_stacks',
+        [
+            {'Stacks': [{'StackName': 'stack-1', 'StackId': 'arn:1', 'Tags': [{'Key': 'k', 'Value': 'v'}]}]},
+            {'Stacks': [{'StackName': 'stack-2', 'StackId': 'arn:2'}]},
+        ],
+    )
+
+    actual = describe_all_stacks(cfn_client)
+
+    assert actual == {'stack-1': Stack(name='stack-1', id='arn:1'), 'stack-2': Stack(name='stack-2', id='arn:2')}
+    assert actual['stack-1'].tags == {'k': 'v'}
+    assert actual['stack-2'].tags == {}
 
 
 def test_list_importing_stacks_across_pages():

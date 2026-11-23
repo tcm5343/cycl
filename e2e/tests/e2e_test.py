@@ -3,6 +3,10 @@ import os
 import subprocess
 import sys
 
+import boto3
+
+from cycl import build_graph, fetch_exports
+
 
 def test_cyclic_region(monkeypatch):
     region = 'us-west-2'
@@ -49,3 +53,30 @@ def test_acyclic_region(monkeypatch):
     # create a role specifically for integration testing
     # always run the destroy infra step
     # run integration tests for change, beta version, and prod version
+
+
+def _cyclic_region_client():
+    return boto3.client('cloudformation', region_name='us-west-2')
+
+
+def test_fetch_exports_describe_stacks():
+    exports = fetch_exports(cfn_client=_cyclic_region_client(), describe_stacks=True)
+
+    export = exports['cyclic-stack-a-export-1']
+    stacks = [export.exporting_stack, *export.importing_stacks]
+    assert [stack.name for stack in stacks] == ['cyclic-stack-a', 'cyclic-stack-b']
+    for stack in stacks:
+        assert stack.id is not None, stack
+        assert stack.id.startswith('arn:aws:cloudformation:us-west-2:'), stack
+        assert stack.tags.get('cycl-e2e-group') == 'cyclic', stack
+
+    graph = build_graph(exports, node_key_fn=lambda stack: stack.tags.get('cycl-e2e-group', stack.name))
+    assert set(graph.nodes['cyclic']['stacks']) >= set(stacks)
+
+
+def test_fetch_exports_excludes_tags_by_default():
+    exports = fetch_exports(cfn_client=_cyclic_region_client())
+
+    export = exports['cyclic-stack-a-export-1']
+    assert export.exporting_stack.tags == {}
+    assert all(stack.tags == {} for stack in export.importing_stacks)

@@ -1,101 +1,26 @@
-import logging
-from unittest.mock import Mock, call, patch
+from unittest.mock import Mock, call
 
 import networkx as nx
 import pytest
 
-import cycl._core as core_module
-from cycl import Export, Stack, build_graph, fetch_exports
+from cycl import Export, Stack, build_graph, merge_graphs
 
 
-def _export(name, exporter, importers=()):
+def _stack(name, account='000'):
+    return Stack(name=name, id=f'arn:{account}:{name}')
+
+
+def _export(name, exporter, importers=(), account='000'):
     return Export(
         name=name,
         value=f'{name}-value',
-        exporting_stack=Stack(name=exporter, id=f'arn:{exporter}'),
-        importing_stacks=tuple(Stack(name=importer) for importer in importers),
+        exporting_stack=_stack(exporter, account),
+        importing_stacks=tuple(_stack(importer, account) for importer in importers),
     )
 
 
 def _exports(*exports):
     return {export.name: export for export in exports}
-
-
-@pytest.fixture(autouse=True)
-def mock_boto3():
-    with patch.object(core_module, 'boto3') as mock:
-        yield mock
-
-
-@pytest.fixture(autouse=True)
-def mock_list_exports():
-    with patch.object(core_module, 'list_exports', autospec=True) as mock:
-        mock.return_value = {}
-        yield mock
-
-
-@pytest.fixture(autouse=True)
-def mock_list_importing_stacks():
-    with patch.object(core_module, 'list_importing_stacks', autospec=True) as mock:
-        mock.return_value = []
-        yield mock
-
-
-# fetch_exports
-
-
-def test_fetch_exports_returns_empty_exports():
-    assert fetch_exports() == {}
-
-
-def test_fetch_exports_creates_client_with_retry_config(mock_boto3, mock_list_exports):
-    fetch_exports()
-
-    mock_boto3.client.assert_called_once()
-    assert mock_boto3.client.call_args.args == ('cloudformation',)
-    assert mock_boto3.client.call_args.kwargs['config'].retries == {'max_attempts': 10, 'mode': 'adaptive'}
-    mock_list_exports.assert_called_once_with(mock_boto3.client.return_value)
-
-
-def test_fetch_exports_uses_provided_client(mock_boto3, mock_list_exports, mock_list_importing_stacks):
-    cfn_client = Mock(name='cfn_client')
-    mock_list_exports.return_value = _exports(_export('export-1', 'stack-a'))
-
-    fetch_exports(cfn_client=cfn_client)
-
-    mock_boto3.client.assert_not_called()
-    mock_list_exports.assert_called_once_with(cfn_client)
-    mock_list_importing_stacks.assert_called_once_with(cfn_client, 'export-1')
-
-
-def test_fetch_exports_is_keyword_only():
-    with pytest.raises(TypeError):
-        fetch_exports(Mock())  # type: ignore[misc]
-
-
-def test_fetch_exports_adds_importing_stacks(mock_list_exports, mock_list_importing_stacks):
-    mock_list_exports.return_value = _exports(_export('export-1', 'stack-a'), _export('export-2', 'stack-b'))
-    mock_list_importing_stacks.side_effect = lambda _client, name: {
-        'export-1': [Stack(name='stack-b'), Stack(name='stack-c')],
-        'export-2': [Stack(name='stack-c')],
-    }[name]
-
-    actual = fetch_exports()
-
-    assert actual == _exports(
-        _export('export-1', 'stack-a', ['stack-b', 'stack-c']),
-        _export('export-2', 'stack-b', ['stack-c']),
-    )
-
-
-def test_fetch_exports_warns_when_export_has_no_imports(caplog, mock_list_exports):
-    mock_list_exports.return_value = _exports(_export('export-1', 'stack-a'))
-
-    with caplog.at_level(logging.WARNING):
-        actual = fetch_exports()
-
-    assert actual == _exports(_export('export-1', 'stack-a'))
-    assert 'Export found with no import: export-1 from stack-a' in caplog.text
 
 
 # build_graph
@@ -165,9 +90,9 @@ def test_build_graph_node_attributes():
 
     graph = build_graph(data)
 
-    assert graph.nodes['stack-a'] == {'stacks': {Stack(name='stack-a')}, 'exports': {'export-1': data['export-1']}}
-    assert graph.nodes['stack-b'] == {'stacks': {Stack(name='stack-b')}, 'exports': {'export-2': data['export-2']}}
-    assert graph.nodes['stack-c'] == {'stacks': {Stack(name='stack-c')}, 'exports': {}}
+    assert graph.nodes['stack-a'] == {'stacks': {_stack('stack-a')}, 'exports': {'export-1': data['export-1']}}
+    assert graph.nodes['stack-b'] == {'stacks': {_stack('stack-b')}, 'exports': {'export-2': data['export-2']}}
+    assert graph.nodes['stack-c'] == {'stacks': {_stack('stack-c')}, 'exports': {}}
 
 
 def test_build_graph_returns_cyclic_graph(is_circular_reversible_permutation):
@@ -240,7 +165,7 @@ def test_build_graph_uses_node_key_fn():
     graph = build_graph(_exports(_export('export-1', 'stack-a', ['stack-b'])), node_key_fn=node_key_fn)
 
     _assert_graph(graph, nodes=['stack-a-key', 'stack-b-key'], edges=[('stack-a-key', 'stack-b-key', 'export-1')])
-    assert node_key_fn.call_args_list == [call(Stack(name='stack-a')), call(Stack(name='stack-b'))]
+    assert node_key_fn.call_args_list == [call(_stack('stack-a')), call(_stack('stack-b'))]
 
 
 def test_build_graph_merges_stacks_with_the_same_key():
@@ -252,7 +177,54 @@ def test_build_graph_merges_stacks_with_the_same_key():
     graph = build_graph(data, node_key_fn=_group_key)
 
     assert graph.nodes['stack-a'] == {
-        'stacks': {Stack(name='stack-a1'), Stack(name='stack-a2')},
+        'stacks': {_stack('stack-a1'), _stack('stack-a2')},
         'exports': {'export-1': data['export-1'], 'export-2': data['export-2']},
     }
-    assert graph.nodes['stack-b']['stacks'] == {Stack(name='stack-b')}
+    assert graph.nodes['stack-b']['stacks'] == {_stack('stack-b')}
+
+
+# merge_graphs
+
+
+def test_merge_graphs_returns_empty_graph():
+    assert nx.number_of_nodes(merge_graphs({})) == 0
+
+
+def test_merge_graphs_keeps_same_named_exports_and_stacks_from_each_source():
+    dev = _exports(_export('export-1', 'stack-a', ['stack-b'], account='dev'))
+    prod = _exports(_export('export-1', 'stack-a', ['stack-b'], account='prod'))
+
+    merged = merge_graphs({'dev': build_graph(dev), 'prod': build_graph(prod)})
+
+    _assert_graph(
+        merged,
+        nodes=['stack-a', 'stack-b'],
+        edges=[('stack-a', 'stack-b', ('dev', 'export-1')), ('stack-a', 'stack-b', ('prod', 'export-1'))],
+    )
+    assert merged.nodes['stack-a'] == {
+        'stacks': {_stack('stack-a', 'dev'), _stack('stack-a', 'prod')},
+        'exports': {('dev', 'export-1'): dev['export-1'], ('prod', 'export-1'): prod['export-1']},
+    }
+    assert merged.edges['stack-a', 'stack-b', ('prod', 'export-1')]['export'] == prod['export-1']
+
+
+def test_merge_graphs_finds_cycles_across_sources():
+    dev = build_graph(_exports(_export('export-1', 'stack-a', ['stack-b'], account='dev')))
+    prod = build_graph(_exports(_export('export-2', 'stack-b', ['stack-a'], account='prod')))
+
+    assert nx.is_directed_acyclic_graph(dev)
+    assert nx.is_directed_acyclic_graph(prod)
+    assert len(list(nx.simple_cycles(merge_graphs({'dev': dev, 'prod': prod})))) == 1
+
+
+def test_merge_graphs_keeps_sources_separate_when_node_keys_include_them():
+    def scoped(source):
+        return lambda stack: (source, stack.name)
+
+    dev = build_graph(_exports(_export('export-1', 'stack-a', ['stack-b'], account='dev')), node_key_fn=scoped('dev'))
+    prod = build_graph(_exports(_export('export-2', 'stack-b', ['stack-a'], account='prod')), node_key_fn=scoped('prod'))
+
+    merged = merge_graphs({'dev': dev, 'prod': prod})
+
+    assert nx.number_of_nodes(merged) == 4
+    assert nx.is_directed_acyclic_graph(merged)

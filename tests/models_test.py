@@ -5,10 +5,25 @@ import pytest
 from cycl import Export, Stack
 
 
-def test_stack_equality_ignores_id():
-    assert Stack(name='a', id='arn:a') == Stack(name='a')
-    assert hash(Stack(name='a', id='arn:a')) == hash(Stack(name='a'))
+def test_stack_equality_uses_name_and_id_but_not_tags():
+    assert Stack(name='a', id='arn:a', tags={'k': 'v'}) == Stack(name='a', id='arn:a')
+    assert hash(Stack(name='a', id='arn:a', tags={'k': 'v'})) == hash(Stack(name='a', id='arn:a'))
+    assert Stack(name='a', id='arn:dev:a') != Stack(name='a', id='arn:prod:a')
     assert Stack(name='a') != Stack(name='b')
+
+
+def test_stack_defaults_to_no_tags():
+    assert Stack(name='a').tags == {}
+
+
+def test_stack_tags_are_read_only_copies():
+    tags = {'k': 'v'}
+    stack = Stack(name='a', tags=tags)
+    tags['k'] = 'changed'
+
+    assert stack.tags == {'k': 'v'}
+    with pytest.raises(TypeError):
+        stack.tags['k'] = 'changed'  # type: ignore[index]
 
 
 def test_models_are_frozen():

@@ -1,7 +1,7 @@
 from importlib.metadata import PackageNotFoundError, version
 
-from cycl._core import build_graph, fetch_exports
-from cycl.exceptions import CyclError
+from cycl._fetch import fetch_exports
+from cycl._graph import build_graph, merge_graphs
 from cycl.models import Export, Stack
 
 try:
@@ -10,10 +10,10 @@ except PackageNotFoundError:
     __version__ = '0.0.0+unknown'
 
 __all__ = [
-    'CyclError',
     'Export',
     'Stack',
     '__version__',
     'build_graph',
     'fetch_exports',
+    'merge_graphs',
 ]

@@ -1,4 +1,4 @@
-from aws_cdk import Environment, Stage
+from aws_cdk import Environment, Stage, Tags
 from constructs import Construct
 from stack.cyclic_stack_a import CyclicStackA
 from stack.cyclic_stack_b import CyclicStackB
@@ -7,6 +7,7 @@ from stack.cyclic_stack_b import CyclicStackB
 class CyclicStage(Stage):
     def __init__(self, scope: Construct, id: str, env: Environment) -> None:
         super().__init__(scope, id, env=env)
+        Tags.of(self).add('cycl-e2e-group', 'cyclic')  # read back by the e2e tests
         create_cycle: str = self.node.try_get_context('create_cycle') or ''
         CyclicStackA(
             self,

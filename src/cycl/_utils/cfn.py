@@ -44,6 +44,20 @@ def list_exports(cfn_client: CloudFormationClient) -> dict[str, Export]:
     return exports
 
 
+def describe_all_stacks(cfn_client: CloudFormationClient) -> dict[str, Stack]:
+    """Return every stack in the account and region, with its ARN and tags, keyed by stack name."""
+    stacks: dict[str, Stack] = {}
+    for page in cfn_client.get_paginator('describe_stacks').paginate():
+        log.debug(page)
+        for stack in page['Stacks']:
+            stacks[stack['StackName']] = Stack(
+                name=stack['StackName'],
+                id=stack['StackId'],
+                tags={tag['Key']: tag['Value'] for tag in stack.get('Tags', [])},
+            )
+    return stacks
+
+
 def list_importing_stacks(cfn_client: CloudFormationClient, export_name: str) -> list[Stack]:
     """Return the stacks importing the given export, or an empty list if it is not imported."""
     stacks: list[Stack] = []

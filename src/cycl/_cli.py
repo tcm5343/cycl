@@ -18,7 +18,8 @@ from typing import TYPE_CHECKING
 
 import networkx as nx
 
-from cycl._core import build_graph, fetch_exports
+from cycl._fetch import fetch_exports
+from cycl._graph import build_graph
 from cycl._utils.log_config import configure_log
 
 if TYPE_CHECKING:

@@ -26,6 +26,7 @@ class BootstrapE2EStack(Stack):
             statements=[
                 iam.PolicyStatement(
                     actions=[
+                        'cloudformation:DescribeStacks',
                         'cloudformation:ListExports',
                         'cloudformation:ListImports',
                     ],
