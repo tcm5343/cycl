@@ -62,7 +62,7 @@ dist = [
 ]
 e2e = [
     'pytest>=7.4,<8',
-    'aws-cdk-lib==2.172.0',  # keep in sync with e2e/infra
+    'aws-cdk-lib==2.253.0',  # keep in sync with e2e/infra
     'constructs>=10.0.0,<11.0.0',
 ]
 dev = [
