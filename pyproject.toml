@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-    'setuptools>=70',
+    'setuptools>=77',  # SPDX license expressions (PEP 639)
     'wheel',
     'setuptools-git-versioning>=2.1',
 ]
@@ -11,9 +11,11 @@ name = 'cycl'
 requires-python = '>=3.10'
 description = 'cycl is a CLI and Python SDK to help identify cross-stack import/export circular dependencies, for a given AWS account and region.'
 readme = 'README.md'
-license = {text = "MIT"}
+license = 'MIT'
+license-files = ['LICENSE']
 keywords = ['aws', 'cdk', 'cycle', 'circular', 'dependency', 'infrastructure', 'boto3', 'cloud']
 classifiers = [
+    'Environment :: Console',
     'Intended Audience :: Developers',
     'Natural Language :: English',
     'Programming Language :: Python :: 3.10',
@@ -25,6 +27,7 @@ classifiers = [
     'Programming Language :: Python :: 3',
     'Programming Language :: Python',
     'Topic :: Software Development',
+    'Typing :: Typed',
 ]
 dependencies = [
     'boto3>=1.26',
@@ -41,7 +44,6 @@ test = [
     'pytest-cov>=7.0',
     'pytest-sugar>=1.1',
     'pytest-subtests>=0.15',
-    'pytest-xdist>=3.8',
 ]
 validation = [
     'boto3-stubs[essential]>=1.40',
@@ -74,7 +76,7 @@ dev = [
 ]
 
 [project.urls]
-Repository = 'http://github.com/tcm5343/cycl'
+Repository = 'https://github.com/tcm5343/cycl'
 Documentation = 'https://tcm5343.github.io/cycl/index.html'
 
 [project.scripts]
@@ -87,14 +89,14 @@ line-length = 125
 select = ['ALL']
 ignore = [
     'COM',      # flake8-commas
-    'D100',
-    'D101',
-    'D102',
-    'D103',
-    'D104',
-    'D105',
-    'D106',
-    'D107',
+    'D100',     # undocumented-public-module
+    'D101',     # undocumented-public-class
+    'D102',     # undocumented-public-method
+    'D103',     # undocumented-public-function
+    'D104',     # undocumented-public-package
+    'D105',     # undocumented-magic-method
+    'D106',     # undocumented-public-nested-class
+    'D107',     # undocumented-public-init
     'ERA001',   # commented-out-code
     'FIX002',   # line-contains-todo
     'Q000',     # bad-quotes-inline-string

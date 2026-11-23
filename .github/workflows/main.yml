@@ -2,9 +2,10 @@ name: main
 
 on:
   pull_request:
-    types: ['opened']
+    types: ['opened', 'synchronize']
     branches: ['main']
   push:
+    branches: ['main']  # other branches are covered by pull_request
     paths-ignore: ['docs/**']  # docs-only changes are published by docs.yml, without a release
   workflow_dispatch:
 

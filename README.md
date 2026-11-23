@@ -12,8 +12,8 @@ cycl is a CLI and Python SDK to help identify cross-stack import/export circular
 
 ## Documentation
 
-Documentation for using `cycl` may be found [here](https://tcm5343.github.io/cycl/).
+See the [cycl documentation](https://tcm5343.github.io/cycl/) for installation, usage, and the CLI and SDK reference.
 
 ## Contributing
 
-`cycl` is being actively developed, instructions will come as it becomes more stable. Run `make` to see the available targets and their descriptions.
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for the steps.
