@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 .SHELLFLAGS = -ec
-.PHONY: clean format test test-lower test-upper validate doc-serve install build-e2e-infra destroy-e2e-infra run-e2e github-mcp
+.PHONY: clean format test test-lower test-upper validate doc-serve install build-e2e-infra destroy-e2e-infra run-e2e
 
 export CDK_DISABLE_CLI_TELEMETRY = true
 export UV_NO_PROGRESS = true
