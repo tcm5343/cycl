@@ -226,7 +226,7 @@ jobs:
         env:
           TEST_VERSION: ${{ needs.create-release.outputs.tag }}
         run: |
-          make .venv
+          uv venv  # .venv for the Test PyPI install below and `make run-e2e`
 
           PACKAGE="cycl==${TEST_VERSION#v}"
           INDEX_URL="https://test.pypi.org/simple/"

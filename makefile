@@ -54,5 +54,5 @@ destroy-e2e-infra: install ## tear down the e2e testing infra in AWS
 	./do/destroy-e2e-infra.sh
 
 run-e2e: ## run e2e tests in AWS, using
-	uv pip install --requirement ./e2e/requirements-dev.txt
+	uv pip install --requirement ./e2e/riequirements-dev.txt
 	uv run --no-project pytest ./e2e/tests/
