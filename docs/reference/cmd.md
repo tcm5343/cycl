@@ -1,7 +1,7 @@
 # cycl
 
 ```{argparse}
-:module: cycl.cli
+:module: cycl._cli
 :func: create_parser
 :prog: cycl
 :nosubcommands:

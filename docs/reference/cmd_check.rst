@@ -2,12 +2,12 @@ cycl check
 ================================
 
 .. argparse::
-    :module: cycl.cli
+    :module: cycl._cli
     :func: create_parser
     :prog: cycl
     :path: check
 
-    --ignore-nodes : @after
+    --ignore-node : @after
         .. math::
 
             \forall v \in V(G), \quad v \notin V_{\text{ignored}}

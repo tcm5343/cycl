@@ -31,3 +31,4 @@ intersphinx_mapping = {
     'networkx': ('https://networkx.org/documentation/stable', None),
 }
 autodoc_typehints = 'description'
+autodoc_preserve_defaults = True  # render defaults as written, e.g. attrgetter('name')
