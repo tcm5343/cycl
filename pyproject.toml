@@ -8,7 +8,7 @@ build-backend = 'setuptools.build_meta'
 
 [project]
 name = 'cycl'
-requires-python = '>=3.9'
+requires-python = '>=3.10'
 description = 'cycl is a CLI and Python SDK to help identify cross-stack import/export circular dependencies, for a given AWS account and region.'
 readme = 'README.md'
 license = {text = "MIT"}
@@ -21,7 +21,7 @@ classifiers = [
     'Programming Language :: Python :: 3.12',
     'Programming Language :: Python :: 3.13',
     'Programming Language :: Python :: 3.14',
-    'Programming Language :: Python :: 3.9',
+    'Programming Language :: Python :: 3.15',
     'Programming Language :: Python :: 3',
     'Programming Language :: Python',
     'Topic :: Software Development',
@@ -78,7 +78,7 @@ Repository = 'http://github.com/tcm5343/cycl'
 Documentation = 'https://tcm5343.github.io/cycl/index.html'
 
 [project.scripts]
-cycl = 'cycl.cli:app'
+cycl = 'cycl._cli:app'
 
 [tool.ruff]
 line-length = 125
@@ -152,4 +152,5 @@ log_cli_level = 'INFO'
 addopts = ['--import-mode=importlib']
 
 [tool.uv]
+required-version = '==0.13.9'  # also used by astral-sh/setup-uv in CI
 default-groups = []

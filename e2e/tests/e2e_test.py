@@ -1,22 +1,19 @@
-import ast
+import json
 import os
 import subprocess
 import sys
 
-from cycl.utils.testing import is_circular_reversible_permutation
-
 
 def test_cyclic_region(monkeypatch):
     region = 'us-west-2'
-    expected_return_code = 1
+    expected_return_code = 2  # cycle found
     expected_nodes_in_cycle = ['cyclic-stack-b', 'cyclic-stack-a']
 
     monkeypatch.setenv('AWS_DEFAULT_REGION', region)
-    expected_prefix = 'cycle found between nodes: '
     env = os.environ.copy()
 
     result = subprocess.run(
-        [sys.executable, '-m', 'cycl', 'check'],
+        [sys.executable, '-m', 'cycl', 'check', '--format', 'json'],
         capture_output=True,
         text=True,
         env=env,
@@ -24,11 +21,10 @@ def test_cyclic_region(monkeypatch):
     )
 
     assert result.returncode == expected_return_code, f'Non-zero exit: {result.returncode}\nStderr: {result.stderr}'
-    assert result.stdout.startswith(expected_prefix), result.stdout
-
-    node_str = result.stdout[len(expected_prefix) :].strip()
-    node_list = ast.literal_eval(node_str)
-    assert is_circular_reversible_permutation(expected_nodes_in_cycle, node_list), f'Return: {result.stdout}'
+    cycles = json.loads(result.stdout)['cycles']
+    # a two node cycle may start from either node
+    assert len(cycles) == 1, f'Return: {result.stdout}'
+    assert sorted(cycles[0]) == sorted(expected_nodes_in_cycle), f'Return: {result.stdout}'
 
 
 def test_acyclic_region(monkeypatch):

@@ -7,13 +7,17 @@ SHELL := /bin/bash
 export CDK_DISABLE_CLI_TELEMETRY = true
 export UV_NO_PROGRESS = true
 
-VENV := .venv
 BRANCH_NAME := $(shell git rev-parse --abbrev-ref HEAD)
 REPO_NAME := $(shell basename -s .git `git config --get remote.origin.url`)
 UV_VERSION ?= $(shell cat .python-version | grep -v "^#")
 
 help:
 	@egrep -h '\s##\s' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m  %-30s\033[0m %s\n", $$1, $$2}'
+
+clean: ## clean temp files from directory
+	@rm -rf .venv/ docs/_build .ruff_cache/ .pytest_cache/ .mypy_cache/ build/ dist/ src/cycl.egg-info/
+	@find . -type d -name "__pycache__" -exec rm -rf {} +
+	@rm -f .coverage
 
 lock: pyproject.toml
 	uv lock
@@ -47,15 +51,8 @@ build-e2e-infra: install ## build the e2e testing infra in AWS
 	./do/build-e2e-infra.sh
 
 destroy-e2e-infra: install ## tear down the e2e testing infra in AWS
-	./do/destory-e2e-infra.sh
+	./do/destroy-e2e-infra.sh
 
-run-e2e: | $(VENV) ## run e2e tests in AWS, using
+run-e2e: ## run e2e tests in AWS, using
 	uv pip install --requirement ./e2e/requirements-dev.txt
 	uv run --no-project pytest ./e2e/tests/
-
-clean: ## clean temp files from directory
-	rm -rf $(VENV)
-	rm -rf build dist .tox
-	rm -rf docs/_build
-	rm -rf .ruff_cache .pytest_cache .mypy_cache
-	find . -type d -name "__pycache__" -exec rm -rf {} +

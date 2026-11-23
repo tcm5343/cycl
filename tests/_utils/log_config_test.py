@@ -1,6 +1,6 @@
 import logging
 
-from cycl.utils.log_config import configure_log
+from cycl._utils.log_config import configure_log
 
 
 def test_logging_format(caplog):
